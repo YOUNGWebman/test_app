@@ -34,6 +34,11 @@ import android.util.Log;
 import java.lang.reflect.Method;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.HashMap;
+import java.util.Map;
+
+
+/*
 import android.os.Environment;
 import android.os.StatFs;
 import android.os.storage.StorageManager;
@@ -50,7 +55,17 @@ import java.net.NetworkInterface;
 import java.util.Collections;
 import java.net.HttpURLConnection;
 import java.net.URL;
+
+ */
+import java.util.List;
+import android.content.pm.ResolveInfo;
+
 import android.net.ConnectivityManager;
+import android.widget.Toast;
+import android.net.Uri;
+import androidx.annotation.NonNull;
+import android.content.ComponentName;
+import android.content.ActivityNotFoundException;
 
 
 
@@ -77,25 +92,29 @@ public class MainActivity extends AppCompatActivity {
     private int bluetoothEnabledCount = 0;
     private BroadcastReceiver wifiStateReceiver;
     private BroadcastReceiver bluetoothStateReceiver;
-    private BroadcastReceiver storageStateReceiver;
-    private NetworkChangeReceiver networkChangeReceiver;
     private TextView wifiCountTextView;
     private TextView bluetoothCountTextView;
-    private TextView sdUsbStatusTextView;
-    private TextView sataM2StatusTextView;
-    private TextView usedSpaceTextView;
-    private TextView usedSpaceTextView2;
+    private TextView sdStatusTextView;
+    private TextView UsbStatusTextView;
+    private TextView sataStatusTextView;
+    private TextView M2StatusTextView;
 
+    private TextView sdUsedSpaceTextView;
+    private TextView udiskUsedSpaceTextView;
+    private TextView sataUsedSpaceTextView;
+    private TextView m2UsedSpaceTextView;
 
     private  Runnable runnable;
     public static boolean isRunning = false;
 
-    private TextView checkView;
+    private TextView sdCheckView;
+    private TextView udiskCheckView;
+    private TextView sataCheckView;
+    private TextView m2CheckView;
     private Runnable checkStorageTask;
     private long usedSpace = 0;
     private long totalSpace = 0;
-    private TextView statusTextView;
-    private TextView wifiStatusTextView;
+
 
 
     @Override
@@ -113,10 +132,19 @@ public class MainActivity extends AppCompatActivity {
         wifiManager = (WifiManager) getSystemService(Context.WIFI_SERVICE);
         bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
 
-      //  usedSpaceTextView = findViewById(R.id.used_space_text_view);
-        //usedSpaceTextView2 = findViewById(R.id.used_space2_text_view);
-        checkView = findViewById(R.id.check_status_text_view);
-        statusTextView = findViewById(R.id.status_text_view);
+       sdUsedSpaceTextView = findViewById(R.id.sd_used_space_text_view);
+        sataUsedSpaceTextView = findViewById(R.id.sata_used_space_text_view);
+        udiskUsedSpaceTextView = findViewById(R.id.udisk_used_space_text_view);
+        m2UsedSpaceTextView = findViewById(R.id.m2_used_space_text_view);
+
+        sdCheckView = findViewById(R.id.sd_check_status_text_view);
+        udiskCheckView = findViewById(R.id.udisk_check_status_text_view);
+        sataCheckView = findViewById(R.id.sata_check_status_text_view);
+        m2CheckView = findViewById(R.id.m2_check_status_text_view);
+        sdStatusTextView = findViewById(R.id.sd_status_text_view);
+        sataStatusTextView = findViewById(R.id.sata_status_text_view);
+        UsbStatusTextView = findViewById(R.id.usb_status_text_view);
+        M2StatusTextView = findViewById(R.id.M2_status_text_view);
         androidx.appcompat.app.ActionBar actionBar = getSupportActionBar();
         // 注册广播接收器
         // 注册storageStateReceiver
@@ -213,191 +241,327 @@ public class MainActivity extends AppCompatActivity {
         });
 
         Button sdTestButton = findViewById(R.id.sd_test_button);
-      //  TextView sdUsbStatusTextView = findViewById(R.id.sd_usb_status_text_view);
         sdTestButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 sdTestButton.setEnabled(false);
-                // 获取所有的外部存储路径
-                File[] externalFilesDirs = getExternalFilesDirs(null);
-                Log.d(TAG, "获取到的外部存储路径数量：" + externalFilesDirs.length);
-                setProperty("sdcard_test",  "1");
-                for (File dir : externalFilesDirs) {
-                    if (dir != null) {
-                        String externalPath = dir.getAbsolutePath();
-                        Log.d(TAG, "检查路径：" + externalPath);
-                        String type = getStorageType(MainActivity.this, externalPath);
-                        Log.d(TAG, "存储类型：" + type);
-                        if (type.equals("USB/SD")) {
-                            //  checkStorageState(externalPath, "SD", sdUsbStatusTextView, usedSpaceTextView);
-                            checkStorageState(externalPath, "SD");
-                            checkStorageTask = new Runnable() {
-                                @Override
-                                public void run() {
-                                    // 检查存储状态
-                                    // checkStorageState(externalPath, "SD", sdUsbStatusTextView, usedSpaceTextView);
-                                    checkStorageState(externalPath, "SD");
-                                    String executionCount = getSystemProperty("my.script.execution.count");
-                                    Log.d(TAG, "脚本执行次数：" + executionCount);
-                                    checkView.setText("测试次数: " + executionCount);
-                                    // 1秒后再次执行此任务
-                                    handler.postDelayed(this, 1000);
-                                }
-                            };
-                            // 启动检查任务
-                            handler.post(checkStorageTask);
-                            // 找到第一个 "USB/SD" 类型的路径后就跳出循环
-                            break;
+                setSystemProperty("sdcard_test",  "1");
+             /*   new Thread(new Runnable() {
+                    @Override
+                    public void run() {
+                        try {
+                            Thread.sleep(1000);  // 延迟1秒
+                            // 执行您的操作
+                            setSystemProperty("sdcard_test",  "1");
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
                         }
                     }
+                }).start();
+
+              */
+                // 添加延迟
+                handler.postDelayed(new Runnable() {
+                    @Override
+                    public void run() {
+                Boolean sdflag = Boolean.parseBoolean(getSystemProperty("rp.sdcard.storage.flag"));
+                if(sdflag)
+                {
+                    sdStatusTextView.setText("SD已挂载");
+
+                }else {
+                    sdStatusTextView.setText("SD未挂载或未格式化");
+                    setSystemProperty("sdcard_test",  "0");
+                    return;
                 }
-              //  registerReceiver(storageStateReceiver, filter);
+                handler.post(checkStorageTask);
+
+                checkStorageTask = new Runnable() {
+                    @Override
+                    public void run() {
+                        // 检查存储状态
+                        String executionCount = getSystemProperty("rp.sdcard.rw.count");
+                        Log.d(TAG, "脚本执行次数：" + executionCount);
+                        sdCheckView.setText("测试次数: " + executionCount);
+                        // 1秒后再次执行此任务
+                        handler.postDelayed(this, 1000);
+
+                        // 获取存储总容量和已使用容量
+                        String totalStorageStr = getSystemProperty("rp.sdcard.storage.total");
+                        String usedStorageStr = getSystemProperty("rp.sdcard.storage.used");
+
+                        // 将存储容量从字节转换为GB
+                        double totalStorage = Double.parseDouble(totalStorageStr) / 1000000;
+                        double usedStorage = Double.parseDouble(usedStorageStr) / 1000000;
+
+                        // 更新used1_space_text_view的文本
+                       // TextView used1SpaceTextView = findViewById(R.id.used_space_text_view);
+                        sdUsedSpaceTextView.setText("已使用容量: " + String.format("%.2f", usedStorage) + " GB\\总容量: " + String.format("%.2f", totalStorage) + " GB");
+                    }
+                };
+// 启动检查任务
+                handler.post(checkStorageTask);
+
+                    }
+                }, 500);  // 延迟1秒
             }
         });
 
         Button UsbTestButton = findViewById(R.id.usb_test_button);
         UsbTestButton.setOnClickListener(new View.OnClickListener() {
             @Override
+
             public void onClick(View v) {
                 UsbTestButton.setEnabled(false);
-                if (checkStorageTask != null) {
-                    handler.removeCallbacks(checkStorageTask);
-                }
-                // 获取所有的外部存储路径
-                File[] externalFilesDirs = getExternalFilesDirs(null);
-                Log.d(TAG, "获取到的外部存储路径数量：" + externalFilesDirs.length);
-                setProperty("udisk_test",  "1");
-                for (File dir : externalFilesDirs) {
-                    if (dir != null) {
-                        String externalPath = dir.getAbsolutePath();
-                        Log.d(TAG, "检查路径：" + externalPath);
-                        String type = getStorageType(MainActivity.this, externalPath);
-                        Log.d(TAG, "存储类型：" + type);
-                        if (type.equals("USB/SD")) {
-                            checkStorageState(externalPath, "USB");
-                            checkStorageTask = new Runnable() {
-                                String lastExecutionCount = "";
-                                @Override
-                                public void run() {
-                                    // 检查存储状态
-                                    checkStorageState(externalPath, "USB");
-                                    String executionCount = getSystemProperty("my.script.execution.count");
-                                    // 只有在执行次数发生变化时才更新TextView和打印日志
-                                    if (!executionCount.equals(lastExecutionCount)) {
-                                        Log.d(TAG, "脚本执行次数：" + executionCount);
-                                        checkView.setText("测试次数: " + executionCount);
-                                        lastExecutionCount = executionCount;
-                                    }
-                                    // 1秒后再次执行此任务
-                                    handler.postDelayed(this, 1000);
-                                }
-                            };
-                            // 启动检查任务
-                            handler.post(checkStorageTask);
-                            // 找到第一个 "USB/SD" 类型的路径后就跳出循环
-                            break;
+                setSystemProperty("udisk_test",  "1");
+           /*     new Thread(new Runnable() {
+                    @Override
+                    public void run() {
+                        try {
+                            Thread.sleep(2000);  // 延迟2秒
+                            // 执行您的操作
+                            setSystemProperty("udisk_test",  "1");
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
                         }
                     }
-                }
+                }).start();
+
+            */
+                // 添加延迟
+                handler.postDelayed(new Runnable() {
+                    @Override
+                    public void run() {
+                        Boolean udiskflag = Boolean.parseBoolean(getSystemProperty("rp.udisk.storage.flag"));
+                        if(udiskflag)
+                        {
+                            UsbStatusTextView.setText("U盘已挂载");
+                        }else {
+                            sdStatusTextView.setText("U盘未挂载或未格式化");
+                            setSystemProperty("udisk_test",  "0");
+                            return;
+                        }
+
+                        // 启动检查任务
+                        handler.post(checkStorageTask);
+                    }
+                }, 500);  // 延迟1秒
+
+                // 初始化checkStorageTask
+                checkStorageTask = new Runnable() {
+                    @Override
+                    public void run() {
+                        // 检查存储状态
+                        String executionCount = getSystemProperty("rp.udisk.rw.count");
+                        Log.d(TAG, "脚本执行次数：" + executionCount);
+                        udiskCheckView.setText("测试次数: " + executionCount);
+                        // 1秒后再次执行此任务
+                        handler.postDelayed(this, 1000);
+
+                        // 获取存储总容量和已使用容量
+                        String totalStorageStr = getSystemProperty("rp.udisk.storage.total");
+                        String usedStorageStr = getSystemProperty("rp.udisk.storage.used");
+
+                        // 将存储容量从字节转换为GB
+                        double totalStorage = Double.parseDouble(totalStorageStr) / 1000000;
+                        double usedStorage = Double.parseDouble(usedStorageStr) / 1000000;
+
+                        // 更新used1_space_text_view的文本
+                        //   TextView used1SpaceTextView = findViewById(R.id.used1_space_text_view);
+                        udiskUsedSpaceTextView.setText("已使用容量: " + String.format("%.2f", usedStorage) + " GB\\总容量: " + String.format("%.2f", totalStorage) + " GB");
+                    }
+                };
+
+
             }
         });
 
 
 
         Button sataTestButton = findViewById(R.id.sata_test_button);
-      //  TextView sataM2StatusTextView = findViewById(R.id.sata_m2_status_text_view);
-
         sataTestButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 sataTestButton.setEnabled(false);
-                handler.post(checkStorageTask);
-                // 获取所有的外部存储路径
-                File[] externalFilesDirs = getExternalFilesDirs(null);
-                Log.d(TAG, "获取到的外部存储路径数量：" + externalFilesDirs.length);
-                setProperty("sata_test",  "1");
-                for (File dir : externalFilesDirs) {
-                    if (dir != null) {
-                        String externalPath = dir.getAbsolutePath();
-                        if (!externalPath.contains("/storage/emulated/0/")) {
-                            Log.d(TAG, "检查路径：" + externalPath);
-                            String type = getStorageType(MainActivity.this, externalPath);
-                            Log.d(TAG, "存储类型：" + type);
-                            if (type.equals("USB/SD") || type.equals("SATA/M.2")) {
-                                checkStorageState(externalPath, "SATA");
-                                //checkStorageState(externalPath, "SATA", sdUsbStatusTextView, usedSpaceTextView);
-                                checkStorageTask = new Runnable() {
-                                    @Override
-                                    public void run() {
-                                        // 检查存储状态
-                                        //       checkStorageState(externalPath, "SATA",
+                setSystemProperty("sata_test",  "1");
 
-                                        checkStorageState(externalPath, "SATA");
-                                        String executionCount = getSystemProperty("my.script.execution.count");
-                                        Log.d(TAG, "脚本执行次数：" + executionCount);
-                                        checkView.setText("测试次数: " + executionCount);
-                                        // 1秒后再次执行此任务
-                                        handler.postDelayed(this, 1000);
-                                    }
-                                };
-                                // 启动检查任务
-                                handler.post(checkStorageTask);
-                                // 找到第一个就跳出循环
-                                break;
-                            }
+           /*     new Thread(new Runnable() {
+                    @Override
+                    public void run() {
+                        try {
+                            Thread.sleep(1000);  // 延迟1秒
+                            // 执行您的操作
+                            setSystemProperty("sata_test",  "1");
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
                         }
                     }
-                }
-             //   registerReceiver(storageStateReceiver, filter);
-            }
+                }).start();
 
+            */
+
+
+                // 添加延迟
+                handler.postDelayed(new Runnable() {
+                    @Override
+                    public void run() {
+
+                        Boolean sataflag = Boolean.parseBoolean(getSystemProperty("rp.sata.storage.flag"));
+                        if(sataflag)
+                        {
+                            sataStatusTextView.setText("SATA已挂载");
+                        }else {
+                            sataStatusTextView.setText("SATA未挂载或未格式化");
+                            setSystemProperty("sata_test",  "0");
+                            return;
+                        }
+                        handler.post(checkStorageTask);
+
+                        checkStorageTask = new Runnable() {
+                            @Override
+                            public void run() {
+                                // 检查存储状态
+                                String executionCount = getSystemProperty("rp.sata.rw.count");
+                                Log.d(TAG, "脚本执行次数：" + executionCount);
+                                sataCheckView.setText("测试次数: " + executionCount);
+                                // 1秒后再次执行此任务
+                                handler.postDelayed(this, 1000);
+
+                                // 获取存储总容量和已使用容量
+                                String totalStorageStr = getSystemProperty("rp.sata.storage.total");
+                                String usedStorageStr = getSystemProperty("rp.sata.storage.used");
+
+                                // 将存储容量从字节转换为GB
+                                double totalStorage = Double.parseDouble(totalStorageStr) / 1000000;
+                                double usedStorage = Double.parseDouble(usedStorageStr) / 1000000;
+
+                                // 更新used1_space_text_view的文本
+                                sataUsedSpaceTextView.setText("已使用容量: " + String.format("%.2f", usedStorage) + " GB\\总容量: " + String.format("%.2f", totalStorage) + " GB");
+                            }
+                        };
+                        // 启动检查任务
+                        handler.post(checkStorageTask);
+                    }
+                }, 500);  // 延迟1秒
+            }
         });
+
 
         Button M2TestButton = findViewById(R.id.m2_test_button);
         M2TestButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 M2TestButton.setEnabled(false);
-                handler.post(checkStorageTask);
-                // 获取所有的外部存储路径
-                File[] externalFilesDirs = getExternalFilesDirs(null);
-                Log.d(TAG, "获取到的外部存储路径数量：" + externalFilesDirs.length);
-                setProperty("m2_test",  "1");
-                for (File dir : externalFilesDirs) {
-                    if (dir != null) {
-                        String externalPath = dir.getAbsolutePath();
-                        if (!externalPath.contains("/storage/emulated/0/")) {
-                            Log.d(TAG, "检查路径：" + externalPath);
-                            String type = getStorageType(MainActivity.this, externalPath);
-                            Log.d(TAG, "存储类型：" + type);
-                            if (type.equals("USB/SD") || type.equals("SATA/M.2")) {
-                                // checkStorageState(externalPath, "M.2", sdUsbStatusTextView, usedSpaceTextView);
-                                checkStorageState(externalPath, "M.2");
-                                checkStorageTask = new Runnable() {
-                                    @Override
-                                    public void run() {
-                                        // 检查存储状态
-                                        //    checkStorageState(externalPath, "M.2", sdUsbStatusTextView, usedSpaceTextView);
-                                        checkStorageState(externalPath, "M.2");
-                                        String executionCount = getSystemProperty("my.script.execution.count");
-                                        Log.d(TAG, "脚本执行次数：" + executionCount);
-                                        checkView.setText("测试次数: " + executionCount);
-                                        // 1秒后再次执行此任务
-                                        handler.postDelayed(this, 1000);
-                                    }
-                                };
-                                // 启动检查任务
-                                handler.post(checkStorageTask);
-                                // 找到第一个就跳出循环
-                                break;
-                            }
+                setSystemProperty("m2_test",  "1");
+                /*new Thread(new Runnable() {
+                    @Override
+                    public void run() {
+                        try {
+                            Thread.sleep(1000);  // 延迟1秒
+                            // 执行您的操作
+                            setSystemProperty("m2_test",  "1");
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
                         }
                     }
+                }).start();
+
+                 */
+                handler.postDelayed(new Runnable() {
+                    @Override
+                    public void run() {
+                Boolean m2flag = Boolean.parseBoolean(getSystemProperty("rp.m2.storage.flag"));
+                if(m2flag)
+                {
+                    M2StatusTextView.setText("M2已挂载");
+                }else {
+                    M2StatusTextView.setText("M2未挂载或未格式化");
+                    setSystemProperty("m2_test",  "0");
+                    return;
                 }
+                handler.post(checkStorageTask);
+
+                checkStorageTask = new Runnable() {
+                    @Override
+                    public void run() {
+                        // 检查存储状态
+                        String executionCount = getSystemProperty("rp.m2.rw.count");
+                        Log.d(TAG, "脚本执行次数：" + executionCount);
+                        m2CheckView.setText("测试次数: " + executionCount);
+                        // 1秒后再次执行此任务
+                        handler.postDelayed(this, 1000);
+
+                        // 获取存储总容量和已使用容量
+                        String totalStorageStr = getSystemProperty("rp.m2.storage.total");
+                        String usedStorageStr = getSystemProperty("rp.m2.storage.used");
+
+                        // 将存储容量从字节转换为GB
+                        double totalStorage = Double.parseDouble(totalStorageStr) / 1000000;
+                        double usedStorage = Double.parseDouble(usedStorageStr) / 1000000;
+
+                        // 更新used1_space_text_view的文本
+                       // TextView used1SpaceTextView = findViewById(R.id.used1_space_text_view);
+                        m2UsedSpaceTextView.setText("已使用容量: " + String.format("%.2f", usedStorage) + " GB\\总容量: " + String.format("%.2f", totalStorage) + " GB");
+                    }
+                };
+// 启动检查任务
+                handler.post(checkStorageTask);
+
+
+            }
+                }, 500);  // 延迟1秒
             }
         });
 
 
+
+        Button DVTestButton = findViewById(R.id.double_video_button);
+        DVTestButton.setOnClickListener(new View.OnClickListener() {
+
+            @Override
+            public void onClick(View v) {
+                startApp("com.xbn.doublevideoplay");
+            }
+
+        });
+
+
+        Button MCameraTestButton = findViewById(R.id.multi_camera_button);
+        MCameraTestButton.setOnClickListener(new View.OnClickListener() {
+
+            @Override
+            public void onClick(View v) {
+                startNApp(MainActivity.this, "com.example.cam");
+            }
+
+        });
+
+
+        Button CameraTestButton = findViewById(R.id.camera_test_button);
+        CameraTestButton.setOnClickListener(new View.OnClickListener() {
+
+            @Override
+            public void onClick(View v) {
+               // seStartApp("com.cghs.stresstest", "com.cghs.stresstest.test.CameraTest");
+              //  seStartApp("com.cghs.stresstest" , "com.cghs.stresstest.StressTestActivity");
+                startAppWithShellCommand("com.cghs.stresstest" , "com.cghs.stresstest.test.CameraTest");
+
+            }
+
+
+
+        });
+
+        Button RebootTestButton = findViewById(R.id.reboot_test_button);
+        RebootTestButton.setOnClickListener(new View.OnClickListener() {
+
+            @Override
+            public void onClick(View v) {
+
+                startAppWithShellCommand("com.cghs.stresstest" , "com.cghs.stresstest.test.RebootTest");
+            }
+
+        });
 
         wifiCountTextView = findViewById(R.id.wifi_count_text_view);
         bluetoothCountTextView = findViewById(R.id.bluetooth_count_text_view);
@@ -444,45 +608,20 @@ public class MainActivity extends AppCompatActivity {
         registerReceiver(bluetoothStateReceiver, new IntentFilter(BluetoothAdapter.ACTION_STATE_CHANGED));
 
 
-        // 初始化并注册storageStateReceiver
-        storageStateReceiver = new BroadcastReceiver() {
-            @Override
-            public void onReceive(Context context, Intent intent) {
-                String action = intent.getAction();
-                Uri data = intent.getData();
-                String path = data == null ? null : data.getPath();
-                if (action != null && path != null) {
-                    String type = getStorageType(context, path);
-                    if (action.equals(Intent.ACTION_MEDIA_MOUNTED)) {
-                        // 存储设备已挂载
-                        checkStorageState(path, type);
-                    } else if (action.equals(Intent.ACTION_MEDIA_UNMOUNTED)) {
-                        // 存储设备未挂载或已被拔出
-                        statusTextView.append(type + " 未挂载或已被拔出\n");
-                    }
-                }
-            }
-        };
-        IntentFilter storageFilter = new IntentFilter();
-        storageFilter.addAction(Intent.ACTION_MEDIA_MOUNTED);
-        storageFilter.addAction(Intent.ACTION_MEDIA_UNMOUNTED);
-        storageFilter.addDataScheme("file");
-        registerReceiver(storageStateReceiver, storageFilter);
 
-        // 初始化TextView
-        wifiStatusTextView = findViewById(R.id.wifi_status_text_view);
-
-        // 初始化"开始"按钮并设置点击事件
         Button wifiStatusButton = findViewById(R.id.wifi_status_test_button);
         wifiStatusButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                wifiStatusButton.setEnabled(false);
-                if (!isRunning) {
+               // wifiStatusButton.setEnabled(false);
+                Intent intent = new Intent(MainActivity.this, WifiTestActivity.class);
+                startActivity(intent);
+             /*  if (!isRunning) {
                     isRunning = true;
 
                     // 获取IP地址并开始计时
-                    final String ip = NetworkUtils.getWifiIp();
+                  //  final String ip = NetworkUtils.getNetWorkIp();
+                 final    String ip = NetworkUtils.getNetWorkIp("wlan0");
                     final long startTime = System.currentTimeMillis();
 
                     runnable = new Runnable() {
@@ -495,7 +634,8 @@ public class MainActivity extends AppCompatActivity {
                             new Thread(new Runnable() {
                                 @Override
                                 public void run() {
-                                    final String ip = NetworkUtils.getWifiIp();
+                                    //final String ip = NetworkUtils.getNetWorkIp();
+                                    final    String ip = NetworkUtils.getNetWorkIp("wlan0");
                                     final String pingResult = NetworkUtils.ping("www.qq.com");
 
                                     // 在主线程中更新TextView
@@ -505,7 +645,7 @@ public class MainActivity extends AppCompatActivity {
                                             long currentTime = System.currentTimeMillis();
                                             long duration = currentTime - startTime;
                                             double durationInSeconds = duration / 1000.0;
-                                            wifiStatusTextView.setText("IP: " + ip + "\nPing result: " + pingResult + "\nDuration: " + durationInSeconds + " s");
+                                            networkStatusTextView.setText("IP: " + ip + "\nPing result: " + pingResult + "\nDuration: " + durationInSeconds + " s");
                                         }
                                     });
                                 }
@@ -518,17 +658,52 @@ public class MainActivity extends AppCompatActivity {
 
 
                     handler.post(runnable);
-                }
+                } */
             }
         });
 
-        // 初始化NetworkChangeReceiver
-        networkChangeReceiver = new NetworkChangeReceiver();
+        Button ethButton = findViewById(R.id.ethernet_status_test_button);
 
-        // 注册NetworkChangeReceiver
-        IntentFilter networkFilter = new IntentFilter(ConnectivityManager.CONNECTIVITY_ACTION);
 
-        registerReceiver(networkChangeReceiver, networkFilter);
+        ethButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent(MainActivity.this, NetworkTestActivity.class);
+                startActivity(intent);
+            }
+         /*  public void onClick(View v) {
+                ethButton.setEnabled(false);
+                final long startTime = System.currentTimeMillis();
+             //   String ip = NetworkUtils.getNetWorkIp(); // 修改这里
+               final String ipEth0 = NetworkUtils.getNetWorkIp("eth0");
+               final String ipEth1 = NetworkUtils.getNetWorkIp("eth1");
+                if (ipEth0 != null || ipEth1 != null) {
+                    networkStatusTextView.setText("Current IPs: " + ipEth0 + ", " + ipEth1);
+
+                    new Thread(new Runnable() {
+                        @Override
+                        public void run() {
+                           // String pingResult = NetworkUtils.ping("www.qq.com");
+                            String pingResultEth0 = NetworkUtils.ping("www.qq.com");
+                            String pingResultEth1 = NetworkUtils.ping("www.qq.com");
+                            long duration = System.currentTimeMillis() - startTime;
+                            runOnUiThread(new Runnable() {
+                                @Override
+                                public void run() {
+                                   // networkStatusTextView.append("\nPing result:\n" + pingResult);
+                                    networkStatusTextView.append("\nPing result for eth0:\n" + pingResultEth0);
+                                    networkStatusTextView.append("\nPing result for eth1:\n" + pingResultEth1);
+                                    networkStatusTextView.append("\nDuration: " + duration + " ms");
+                                }
+                            });
+                        }
+                    }).start();
+                } else {
+                    networkStatusTextView.setText("IP not found");
+                }
+            } */
+        });
+
 
 
         Button stopButton = findViewById(R.id.stop_button);
@@ -542,12 +717,9 @@ public class MainActivity extends AppCompatActivity {
                 UsbTestButton.setEnabled(true);
                 M2TestButton.setEnabled(true);
                 wifiStatusButton.setEnabled(true);
+                ethButton.setEnabled(true);
 
-                if (isRunning) {
-                    isRunning = false;
-                    handler.removeCallbacks(runnable);
-                    wifiStatusTextView.setText("");
-                }
+
                 if (checkStorageTask != null) {
                     // 移除消息队列中所有的checkStorageTask任务
                     handler.removeCallbacksAndMessages(null);
@@ -564,7 +736,22 @@ public class MainActivity extends AppCompatActivity {
                 setProperty("sata_test", "0");
                 setProperty("m2_test", "0");
                 // 清除statusTextView的文本
-                statusTextView.setText("");
+                sdStatusTextView.setText("SD状态");
+                sdUsedSpaceTextView.setText("已使用容量/总容量");
+                sdCheckView.setText("测试次数：");
+                setSystemProperty("rp.sdcard.rw.count" , "0");
+                sataStatusTextView.setText("SATA状态");
+                sataUsedSpaceTextView.setText("已使用容量/总容量");
+                sataCheckView.setText("测试次数：");
+                setSystemProperty("rp.sata.rw.count" , "0");
+                UsbStatusTextView.setText("U盘状态");
+                udiskUsedSpaceTextView.setText("已使用容量/总容量");
+                udiskCheckView.setText("测试次数：");
+                setSystemProperty("rp.udisk.rw.count" , "0");
+                M2StatusTextView.setText("M2状态");
+                m2UsedSpaceTextView.setText("已使用容量/总容量");
+                m2CheckView.setText("测试次数：");
+                setSystemProperty("rp.m2.rw.count" , "0");
             }
         });
 
@@ -579,8 +766,7 @@ public class MainActivity extends AppCompatActivity {
         super.onDestroy();
         unregisterReceiver(wifiStateReceiver);
         unregisterReceiver(bluetoothStateReceiver);
-        unregisterReceiver(storageStateReceiver);
-        unregisterReceiver(networkChangeReceiver);
+
     }
 
     public static boolean upgradeRootPermission(String pkgCodePath) {
@@ -635,24 +821,8 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    public static String execShellCmd(String command) {
-        StringBuilder output = new StringBuilder();
-        Process process;
-        try {
-            process = Runtime.getRuntime().exec(command);
-            BufferedReader reader = new BufferedReader(
-                    new InputStreamReader(process.getInputStream()));
-            String line;
-            while ((line = reader.readLine()) != null) {
-                output.append(line + "\n");
-            }
-            reader.close();
-        } catch (IOException e) {
-            Log.e(TAG, "Error executing shell command", e);
-        }
-        return output.toString();
-    }
 
+/*
     private long getUsedSpace(File directory) {
         StatFs statFs = new StatFs(directory.getPath());
         long blockSize = statFs.getBlockSizeLong();
@@ -671,25 +841,6 @@ public class MainActivity extends AppCompatActivity {
     private String formatFileSize(long size) {
         return Formatter.formatFileSize(this, size);
     }
-
-    /* private BroadcastReceiver storageStateReceiver = new BroadcastReceiver() {
-        @Override
-        public void onReceive(Context context, Intent intent) {
-            String action = intent.getAction();
-            Uri data = intent.getData();
-            String path = data == null ? null : data.getPath();
-            if (action != null && path != null) {
-                String type = getStorageType(context, path);
-                if (action.equals(Intent.ACTION_MEDIA_MOUNTED)) {
-                    // 存储设备已挂载
-                    checkStorageState(path, type);
-                } else if (action.equals(Intent.ACTION_MEDIA_UNMOUNTED)) {
-                    // 存储设备未挂载或已被拔出
-                    statusTextView.append(type + " 未挂载或已被拔出\n");
-                }
-            }
-        }
-    }; */
 
 
     private String getStorageType(Context context, String path) {
@@ -715,7 +866,6 @@ public class MainActivity extends AppCompatActivity {
         return "Unknown";
     }
 
-
     private void checkStorageState(String path, String deviceName) {
         File directory = new File(path);
         if (directory.exists()) {
@@ -729,22 +879,44 @@ public class MainActivity extends AppCompatActivity {
                     .append("已使用空间：").append(formatFileSize(usedSpace))
                     .append(" / 总容量：").append(formatFileSize(totalSpace)).append("\n");
             String newStatus = status.toString();
-            // 只有在状态发生变化时才更新TextView的文本
-            if (!newStatus.equals(statusTextView.getText().toString())) {
-                statusTextView.setText(newStatus);
+            // 根据设备类型更新对应的TextView
+            switch (deviceName) {
+                case "M.2":
+                    usedSpaceTextView3.setText(newStatus);
+                    break;
+                case "SATA":
+                    usedSpaceTextView1.setText(newStatus);
+                    break;
+                case "USB":
+                    usedSpaceTextView2.setText(newStatus);
+                    break;
+                case "SD":
+                    usedSpaceTextView.setText(newStatus);
+                    break;
             }
             // 1秒后再次执行此任务
             handler.postDelayed(() -> checkStorageState(path, deviceName), 1000);
         } else {
             // 存储设备未挂载或已被拔出
             String newStatus = deviceName + " 未挂载或已被拔出\n";
-            // 只有在状态发生变化时才更新TextView的文本
-            if (!newStatus.equals(statusTextView.getText().toString())) {
-                statusTextView.setText(newStatus);
+            // 根据设备类型更新对应的TextView
+            switch (deviceName) {
+                case "M.2":
+                    usedSpaceTextView3.setText(newStatus);
+                    break;
+                case "SATA":
+                    usedSpaceTextView1.setText(newStatus);
+                    break;
+                case "USB":
+                    usedSpaceTextView2.setText(newStatus);
+                    break;
+                case "SD":
+                    usedSpaceTextView.setText(newStatus);
+                    break;
             }
         }
     }
-
+*/
 
     private String getSystemProperty(String propertyName) {
         Process process = null;
@@ -770,60 +942,33 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-
-
-    public static class NetworkUtils {
-     //   public static int disconnectCount = 0;
-        public static String getWifiIp() {
-            try {
-                List<NetworkInterface> interfaces = Collections.list(NetworkInterface.getNetworkInterfaces());
-                for (NetworkInterface intf : interfaces) {
-                    if (!intf.getName().equalsIgnoreCase("wlan0")) continue;
-
-                    List<InetAddress> addrs = Collections.list(intf.getInetAddresses());
-                    for (InetAddress addr : addrs) {
-                        if (!addr.isLoopbackAddress()) {
-                            String sAddr = addr.getHostAddress();
-
-                            // Check if IPv4 address
-                            boolean isIPv4 = sAddr.indexOf(':') < 0;
-
-                            if (isIPv4) {
-                                return sAddr;
-                            }
-                        }
-                    }
-                }
-            } catch (Exception ignored) { } // for now eat exceptions
-            return null;
-        }
-
-        public static String ping(String url) {
-            String pingResult = "";
-
-            try {
-                Process process = Runtime.getRuntime().exec("/system/bin/ping -c 1 " + url);
-                BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
-
-                String line;
-                while ((line = reader.readLine()) != null) {
-                    pingResult += line + "\n";
-                }
-
-                reader.close();
-            } catch (Exception e) {
-                e.printStackTrace();
-                pingResult = "Ping failed";
-              //  disconnectCount++;
+    private void setSystemProperty(String propertyName, String propertyValue) {
+        Process process = null;
+        try {
+            process = new ProcessBuilder("setprop", propertyName, propertyValue).start();
+            process.waitFor();
+        } catch (IOException | InterruptedException e) {
+            e.printStackTrace();
+        } finally {
+            if (process != null) {
+                process.destroy();
             }
-
-           // return "Ping output:\n" + pingResult + "\nDisconnect count: " + disconnectCount;
-            return "Ping output:\n" + pingResult ;
         }
-
     }
 
-    public class NetworkChangeReceiver extends BroadcastReceiver {
+
+    public static class MyNetworkChangeReceiver extends BroadcastReceiver {
+        private Handler handler;
+        private Runnable runnable;
+        private TextView networkStatusTextView;
+
+        public MyNetworkChangeReceiver(Handler handler, Runnable runnable, TextView networkStatusTextView) {
+            this.handler = handler;
+            this.runnable = runnable;
+            this.networkStatusTextView = networkStatusTextView;
+        }
+
+
         @Override
         public void onReceive(Context context, Intent intent) {
             if (ConnectivityManager.CONNECTIVITY_ACTION.equals(intent.getAction())) {
@@ -833,13 +978,116 @@ public class MainActivity extends AppCompatActivity {
 
                 if (noConnectivity) {
                     MainActivity.isRunning = false;
-                 //   NetworkUtils.disconnectCount++;
+                    handler.removeCallbacks(runnable);  // 停止Runnable
+                    // 不更新UI
                 } else {
                     MainActivity.isRunning = true;
                 }
             }
         }
+
     }
+
+    public void startApp(String packageName) {
+        Intent launchIntent = getPackageManager().getLaunchIntentForPackage(packageName);
+
+        if (launchIntent != null) {
+            startActivity(launchIntent);
+        } else {
+            Toast.makeText(this, "没有找到应用", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    public boolean startNApp(Context context, String packageName) {
+//String packageName = "XXX";
+        Intent intent = new Intent(Intent.ACTION_MAIN, null);
+        intent.addCategory(Intent.CATEGORY_LAUNCHER);
+        PackageManager pm = context.getPackageManager();
+        List<ResolveInfo> listInfos = pm.queryIntentActivities(intent, 0);
+        String className = null;
+        for (ResolveInfo info : listInfos) {
+            if (packageName.equals(info.activityInfo.packageName)) {
+                className = info.activityInfo.name;
+                break;
+            }
+        }
+        if (className != null && className.length() > 0) {
+            intent.setComponent(new ComponentName(packageName, className));
+            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK
+                    | Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED);
+            context.startActivity(intent);
+            return true;
+        }
+        return false;
+    }
+
+    /*public void startNApp(String packageName, String activityName) {
+        Intent intent = new Intent();
+        ComponentName cn = new ComponentName(packageName, activityName);
+        intent.setComponent(cn);
+        try {
+            startActivity(intent);
+        } catch (ActivityNotFoundException e) {
+            Toast.makeText(this, "没有找到应用", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+     */
+/*
+    public void seStartApp(String packageName, String activityName) {
+        Intent intent = new Intent();
+        intent.setClassName(packageName, activityName);
+
+        try {
+            startActivity(intent);
+        } catch (ActivityNotFoundException e) {
+            Toast.makeText(this, "没有找到应用", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+ */
+    public void seStartApp(String packageName, String activityName) {
+        Intent intent = new Intent(Intent.ACTION_MAIN);
+        intent.addCategory(Intent.CATEGORY_LAUNCHER);
+        intent.setComponent(new ComponentName(packageName, activityName));
+
+        try {
+            startActivity(intent);
+        } catch (ActivityNotFoundException e) {
+            Toast.makeText(this, "没有找到应用", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+
+
+    public void startAppWithShellCommand(String packageName, String activityName) {
+        Process processa = null;
+        DataOutputStream os = null;
+        try {
+            String cmd="am start " + packageName + "/" + activityName;
+            processa = Runtime.getRuntime().exec("su"); //切换到root帐号
+            os = new DataOutputStream(processa.getOutputStream());
+            os.writeBytes(cmd + "\n");
+            os.writeBytes("exit\n");
+            os.flush();
+            processa.waitFor();
+        } catch (Exception e) {
+            Log.e(TAG, "Error upgrading root permission", e);
+        } finally {
+            try {
+                if (os != null) {
+                    os.close();
+                }
+                if (processa != null) {
+                    processa.destroy();
+                }
+            } catch (Exception e) {
+                Log.e(TAG, "Error closing process", e);
+            }
+        }
+    }
+
+
 
 
 }

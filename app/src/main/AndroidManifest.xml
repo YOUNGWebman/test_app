@@ -18,6 +18,18 @@
 
 
 
+        <queries>
+            <package android:name="com.xbn.doublevideoplay" />
+            <package android:name="com.cghs.stresstest" />
+            <package android:name="com.cghs.stresstest.test.CameraTest" />
+
+            <package android:name="com.example.cam" />
+
+            <package android:name="com.android.calculator2" />
+            <package android:name="com.android.calculator2.Calculator" />
+
+        </queries>
+
 
 
     <application
@@ -34,17 +46,24 @@
             android:name=".MainActivity"
             android:exported="true"
             android:label="@string/app_name"
+            android:screenOrientation="landscape"
             android:theme="@style/Theme.Rpdzkjtest.NoActionBar">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
-
             <meta-data
                 android:name="android.app.lib_name"
                 android:value="" />
         </activity>
+        <!-- Declare NetworkTestActivity here -->
+        <activity android:name=".NetworkTestActivity" />
+        <activity android:name=".WifiTestActivity" />
+        <!-- Declare your new activity here -->
+
+
+
     </application>
+
 
 </manifest>
