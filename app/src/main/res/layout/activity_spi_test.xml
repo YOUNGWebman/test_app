@@ -1,6 +1,120 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    tools:context=".SpiTestActivity">
 
-</LinearLayout>
+    <TextView
+        android:id="@+id/spiString"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="当前spi数量为： "
+        android:textSize="16sp"
+        android:layout_marginTop="0dp"
+        android:layout_marginLeft="400dp"
+        />
+
+
+
+    <TextView
+        android:id="@+id/spi0Send"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="spi0发送"
+        android:textSize="16sp"
+        android:layout_marginTop="50dp"
+        android:layout_marginLeft="0dp"/>
+
+    <TextView
+        android:id="@+id/spi0Recive"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="100dp"
+        android:layout_marginLeft="0dp"
+        android:text="spi0接收"
+        android:textSize="16sp"
+        />
+
+    <TextView
+        android:id="@+id/spi0String"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="spi0测试结果"
+        android:textSize="16sp"
+        android:layout_marginTop="150dp"
+        android:layout_marginLeft="0dp"
+        />
+
+
+    <TextView
+        android:id="@+id/spi1Send"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="spi1发送"
+        android:textSize="16sp"
+        android:layout_marginTop="50dp"
+        android:layout_marginLeft="500dp"/>
+
+    <TextView
+        android:id="@+id/spi1Recive"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="100dp"
+        android:layout_marginLeft="500dp"
+        android:text="spi1接收"
+        android:textSize="16sp"
+        />
+
+    <TextView
+        android:id="@+id/spi1String"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="spi1测试结果"
+        android:textSize="16sp"
+        android:layout_marginTop="150dp"
+        android:layout_marginLeft="500dp" />
+
+
+
+
+    <TextView
+        android:id="@+id/spi2Send"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="spi2发送"
+        android:textSize="16sp"
+        android:layout_marginTop="250dp"
+        android:layout_marginLeft="0dp"/>
+
+    <TextView
+        android:id="@+id/spi2Recive"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="300dp"
+        android:layout_marginLeft="0dp"
+        android:text="spi2接收"
+        android:textSize="16sp"
+        />
+
+    <TextView
+        android:id="@+id/spi2String"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="spi2测试结果"
+        android:textSize="16sp"
+        android:layout_marginTop="350dp"
+        android:layout_marginLeft="0dp" />
+
+    <Button
+        android:id="@+id/start_spi_test_button"
+        android:layout_width="80dp"
+        android:layout_height="50dp"
+        android:layout_marginTop="350dp"
+        android:layout_marginLeft="700dp"
+        android:text="start"
+        android:textSize="8sp" />
+
+
+
+</RelativeLayout>

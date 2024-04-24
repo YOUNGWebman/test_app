@@ -1,6 +1,120 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    tools:context=".CanTestActivity">
 
-</LinearLayout>
+    <TextView
+        android:id="@+id/canString"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="当前CAN数量为： "
+        android:textSize="16sp"
+        android:layout_marginTop="0dp"
+        android:layout_marginLeft="400dp"
+        />
+
+
+
+    <TextView
+        android:id="@+id/can0Send"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="CAN0发送"
+        android:textSize="16sp"
+        android:layout_marginTop="50dp"
+        android:layout_marginLeft="0dp"/>
+
+    <TextView
+        android:id="@+id/can0Recive"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="100dp"
+        android:layout_marginLeft="0dp"
+        android:text="CAN0接收"
+        android:textSize="16sp"
+        />
+
+    <TextView
+        android:id="@+id/can0String"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="CAN0测试结果"
+        android:textSize="16sp"
+        android:layout_marginTop="150dp"
+        android:layout_marginLeft="0dp"
+        />
+
+
+    <TextView
+        android:id="@+id/can1Send"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="CAN1发送"
+        android:textSize="16sp"
+        android:layout_marginTop="50dp"
+        android:layout_marginLeft="700dp"/>
+
+   <TextView
+        android:id="@+id/can1Recive"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="100dp"
+        android:layout_marginLeft="700dp"
+        android:text="CAN1接收"
+        android:textSize="16sp"
+        />
+
+    <TextView
+        android:id="@+id/can1String"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="CAN1测试结果"
+        android:textSize="16sp"
+        android:layout_marginTop="150dp"
+        android:layout_marginLeft="700dp" />
+
+
+
+
+    <TextView
+        android:id="@+id/can2Send"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="CAN2发送"
+        android:textSize="16sp"
+        android:layout_marginTop="250dp"
+        android:layout_marginLeft="0dp"/>
+
+    <TextView
+        android:id="@+id/can2Recive"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="300dp"
+        android:layout_marginLeft="0dp"
+        android:text="CAN2接收"
+        android:textSize="16sp"
+        />
+
+    <TextView
+        android:id="@+id/can2String"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="CAN2测试结果"
+        android:textSize="16sp"
+        android:layout_marginTop="350dp"
+        android:layout_marginLeft="0dp" />
+
+    <Button
+        android:id="@+id/start_can_test_button"
+        android:layout_width="80dp"
+        android:layout_height="50dp"
+        android:layout_marginTop="350dp"
+        android:layout_marginLeft="700dp"
+        android:text="start"
+        android:textSize="8sp" />
+
+
+
+</RelativeLayout>

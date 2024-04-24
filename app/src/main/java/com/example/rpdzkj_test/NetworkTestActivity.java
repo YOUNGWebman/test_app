@@ -22,120 +22,320 @@ import java.net.NetworkInterface;
 import java.util.Collections;
 
 import android.net.ConnectivityManager;
-
-
+import android.net.NetworkInfo;
+import java.net.SocketException;
+import android.util.Log;
 import java.util.concurrent.atomic.AtomicBoolean;
+import android.net.NetworkRequest;
+import android.net.NetworkCapabilities;
+import android.net.Network;
+
+
 
 public class NetworkTestActivity extends AppCompatActivity {
-    private TextView networkStatusTextView;
-    private TextView networkStatusTextView1;
-    private long startTime;
-    public static AtomicBoolean isRunning = new AtomicBoolean(false);
-    private Runnable runnable;
-    private Handler handler = new Handler();
-    private MainActivity.MyNetworkChangeReceiver ethnetworkChangeReceiver;
-    private MainActivity.MyNetworkChangeReceiver ethnetworkChangeReceiver1;
+
+    private TextView networkStatusTextView, networkStatusTextView1, networkStatusTextView2;
+
+    private Runnable runnable, runnable1, runnable2;
+    private Handler handler = new Handler(), handler1 = new Handler(), handler2 = new Handler();
+    private NetworkTest networkTest, networkTest1, networkTest2;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_network_test);
-
         networkStatusTextView = findViewById(R.id.ethnetwork_status_text_view);
         networkStatusTextView1 = findViewById(R.id.ethnetwork1_status_text_view);
-        startTime = System.currentTimeMillis();
+        networkStatusTextView2 = findViewById(R.id.ethnetwork2_status_text_view);
 
-        if (!isRunning.get()) {
-            isRunning.set(true);
+        // 初始化isRunning
+        AtomicBoolean isRunning0 = new AtomicBoolean(false);
+        AtomicBoolean isRunning1 = new AtomicBoolean(false);
+        AtomicBoolean isRunning2 = new AtomicBoolean(false);
 
-            // 获取IP地址并开始计时
-            final String ipEth0 = NetworkUtils.getNetWorkIp("eth0");
-            final String ipEth1 = NetworkUtils.getNetWorkIp("eth1");
-            final long startTimeEth0 = System.currentTimeMillis();  // 在这里初始化startTimeEth0
-            final long startTimeEth1 = System.currentTimeMillis();  // 在这里初始化startTimeEth1
+        // 初始化isStoped
+ /*       AtomicBoolean isStoped0 = new AtomicBoolean(false);
+        AtomicBoolean isStoped1= new AtomicBoolean(false);
+        AtomicBoolean isStoped2 = new AtomicBoolean(false);
 
-            runnable = new Runnable() {
-                @Override
-                public void run() {
-                    if (!isRunning.get()) {
-                        return;
-                    }
+  */
 
-                    new Thread(new Runnable() {
-                        @Override
-                        public void run() {
-                            String lastIpEth0 = null;
-                            String lastPingResultEth0 = null;
-                            while (isRunning.get()) {
-                                final String ipEth0 = NetworkUtils.getNetWorkIp("eth0");
-                                if (ipEth0 == null) {
-                                    final long disconnectTimeEth0 = System.currentTimeMillis();
-                                    runOnUiThread(() -> {
-                                        long durationEth0 = disconnectTimeEth0 - startTimeEth0;
-                                        networkStatusTextView.setText("\nIP: null\nDuration for eth0: " + durationEth0 / 1000.0 + " s");
-                                    });
-                                    return;
-                                }
-                                final String pingResultEth0 = NetworkUtils.ping("www.qq.com");
-                                final long durationEth0 = System.currentTimeMillis() - startTimeEth0;
-                                if (!ipEth0.equals(lastIpEth0) || !pingResultEth0.equals(lastPingResultEth0)) {
-                                    lastIpEth0 = ipEth0;
-                                    lastPingResultEth0 = pingResultEth0;
-                                    runOnUiThread(() -> networkStatusTextView.setText("\nIP: " + ipEth0 + "\nDuration for eth0: "+ "\nPing result for eth0:\n" + pingResultEth0 + durationEth0 / 1000.0 + " s"));
-                                }
-                            }
-                        }
-                    }).start();
+        // 为每个网络接口创建NetworkTest对象
+        networkTest = new NetworkTest("eth0", handler, networkStatusTextView, this,  isRunning0);
+        networkTest1 = new NetworkTest("eth1", handler1, networkStatusTextView1, this,  isRunning1);
+        networkTest2 = new NetworkTest("eth2", handler2, networkStatusTextView2, this,  isRunning2);
 
-                    new Thread(new Runnable() {
-                        @Override
-                        public void run() {
-                            String lastIpEth1 = null;
-                            String lastPingResultEth1 = null;
-                            while (isRunning.get()) {
-                                final String ipEth1 = NetworkUtils.getNetWorkIp("eth1");
-                                if (ipEth1 == null) {
-                                    final long disconnectTimeEth1 = System.currentTimeMillis();
-                                    runOnUiThread(() -> {
-                                        long durationEth1 = disconnectTimeEth1 - startTimeEth1;
-                                        networkStatusTextView1.setText("\nIP: null\nDuration for eth1: " + durationEth1 / 1000.0 + " s");
-                                    });
-                                    return;
-                                }
-                                final String pingResultEth1 = NetworkUtils.ping("www.qq.com");
-                                final long durationEth1 = System.currentTimeMillis() - startTimeEth1;
-                                if (!ipEth1.equals(lastIpEth1) || !pingResultEth1.equals(lastPingResultEth1)) {
-                                    lastIpEth1 = ipEth1;
-                                    lastPingResultEth1 = pingResultEth1;
-                                    runOnUiThread(() -> networkStatusTextView1.setText("\nIP: " + ipEth1 +"\nDuration for eth1: " + "\nPing result for eth1:\n" + pingResultEth1 + durationEth1 / 1000.0 + " s"));
-                                }
-                            }
-                        }
-                    }).start();
+        // 注册NetworkCallback
+        ConnectivityManager connectivityManager = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
+        NetworkRequest networkRequest = new NetworkRequest.Builder()
+                .addTransportType(NetworkCapabilities.TRANSPORT_ETHERNET)  // 以太网
+                .build();
+        connectivityManager.registerNetworkCallback(networkRequest, networkTest.networkCallback);
+        connectivityManager.registerNetworkCallback(networkRequest, networkTest1.networkCallback);
+        connectivityManager.registerNetworkCallback(networkRequest, networkTest2.networkCallback);
 
-                    ethnetworkChangeReceiver = new MainActivity.MyNetworkChangeReceiver(handler, runnable, networkStatusTextView);
-                    ethnetworkChangeReceiver1 = new MainActivity.MyNetworkChangeReceiver(handler, runnable, networkStatusTextView1);
-                    // 创建意图过滤器，并设置它只接收网络状态变化的广播
-                    IntentFilter filter = new IntentFilter(ConnectivityManager.CONNECTIVITY_ACTION);
-
-                    // 注册广播接收器
-                    registerReceiver(ethnetworkChangeReceiver, filter);
-                    registerReceiver(ethnetworkChangeReceiver1, filter);
-                }
-            };
-            handler.post(runnable);
-        }
+        // 开始测试
+        networkTest.start();
+        networkTest1.start();
+        networkTest2.start();
     }
 
     @Override
     protected void onDestroy() {
         super.onDestroy();
-
-        // 取消注册广播接收器
-        unregisterReceiver(ethnetworkChangeReceiver);
-        unregisterReceiver(ethnetworkChangeReceiver1);
-        isRunning.set(false);
+        // 取消注册NetworkCallback
+        ConnectivityManager connectivityManager = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
+        connectivityManager.unregisterNetworkCallback(networkTest.networkCallback);
+        connectivityManager.unregisterNetworkCallback(networkTest1.networkCallback);
+        connectivityManager.unregisterNetworkCallback(networkTest2.networkCallback);
     }
+
+    public class NetworkTest {
+        private String interfaceName;
+        private Handler handler;
+        private TextView networkStatusTextView;
+        private long startTime;
+        private AtomicBoolean shouldStop = new AtomicBoolean(false);
+        private AtomicBoolean isRunning;
+        private double lastRecordedTime = 0;
+        private Context context;
+        private ConnectivityManager.NetworkCallback networkCallback;
+        private Network currentNetwork;
+        private AtomicBoolean networkLost = new AtomicBoolean(false);
+       // private Runnable runnable;
+       // private AtomicBoolean isStopped = new AtomicBoolean(false);
+
+
+        public NetworkTest(String interfaceName, Handler handler, TextView networkStatusTextView, Context context, AtomicBoolean isRunning) {
+            this.interfaceName = interfaceName;
+            this.handler = handler;
+            this.networkStatusTextView = networkStatusTextView;
+            this.startTime = System.currentTimeMillis();
+            this.context = context;
+            this.isRunning = isRunning;
+      //      this.isStopped = isStopped;
+            this.networkCallback = new ConnectivityManager.NetworkCallback() {
+           /*     @Override
+                public void onAvailable(Network network) {
+                    NetworkInterface networkInterface = getNetworkInterface(network);
+                    if (networkInterface != null && networkInterface.getName().equals(interfaceName)) {
+                        if(isStopped.get())
+                        {
+                            return;
+                        }
+                        currentNetwork = network;
+                        if (!isRunning.get()) {
+                            isRunning.set(true);
+                            shouldStop.set(false);
+                            startTime = System.currentTimeMillis();
+
+                            handler.post(runnable);
+                        }
+                    }
+                } */
+
+                @Override
+                public void onLost(Network network) {
+                    if (network.equals(currentNetwork)) {
+                        NetworkInterface networkInterface = getNetworkInterface(network);
+                        if (networkInterface != null && networkInterface.getName().equals(interfaceName)) {
+                            isRunning.set(false);
+                            handler.removeCallbacks(runnable);
+                            shouldStop.set(true);
+                            networkLost.set(true);
+                          //  isStopped.set(true);
+                            networkStatusTextView.setText("测试失败" + "\nDuration:" + lastRecordedTime + " s");
+                            Log.d("NetworkTest", "Interface disconnected: " + interfaceName);
+                        }
+                    }
+                }
+            };
+        }
+
+        private NetworkInterface getNetworkInterface(Network network) {
+            try {
+                for (NetworkInterface networkInterface : Collections.list(NetworkInterface.getNetworkInterfaces())) {
+                    if (networkInterface.getName().equals(interfaceName)) {
+                        return networkInterface;
+                    }
+                }
+            } catch (SocketException e) {
+                e.printStackTrace();
+            }
+            return null;
+        }
+
+        public void start() {
+            if (!isRunning.get()) {
+                isRunning.set(true);
+                Runnable runnable = new Runnable() {
+                    @Override
+                    public void run() {
+                        if (!isRunning.get()) {
+                            Log.d("NetworkTest", "Not running" + "ipname" + interfaceName );
+                            return;
+                        }
+
+                        new Thread(new Runnable() {
+                            @Override
+                            public void run() {
+                                if (shouldStop.get()) {
+                                    return;
+                                }
+                                Log.d("NetworkTestIP0", "Interface " + interfaceName );
+                           //     if (!NetworkUtils.isInterfaceConnected(interfaceName, context))
+                                    if (NetworkUtils.getNetWorkIp(interfaceName) == null)
+                                {
+                                    networkStatusTextView.setText("测试失败" + "\nDuration:" + lastRecordedTime + " s");
+                                    isRunning.set(false);
+                                    Log.d("NetworkTestIP", "Interface " + interfaceName + " is not connected");
+                                    return;
+                                }
+
+                                final String ip = NetworkUtils.getNetWorkIp(interfaceName);
+                                Log.d("NetworkTest", "Interface: " + interfaceName + ", IP: " + ip);
+                                final String pingResult = NetworkUtils.ping("www.qq.com");
+
+                                runOnUiThread(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        //if (!isRunning.get() || shouldStop.get() || networkLost.get())
+                                            if (!isRunning.get() )
+                                            {
+                                                return;
+                                            }
+                                            if(shouldStop.get() )
+
+                                        {
+                                            networkStatusTextView.setText("测试失败1" + "\nDuration:" + lastRecordedTime + " s");
+                                          //  isStopped.set(true);
+                                            shouldStop.set(true);
+                                            isRunning.set(false);
+                                            return;
+                                        }
+                                        long currentTime = System.currentTimeMillis();
+                                        long duration = currentTime - startTime;
+                                        double durationInSeconds = duration / 1000.0;
+                                        lastRecordedTime = durationInSeconds;
+                                        networkStatusTextView.setText("IP: " + ip + "\nPing result: " + pingResult + "\nDuration: " + durationInSeconds + " s");
+                                    }
+                                });
+                            }
+                        }).start();
+
+                        handler.postDelayed(this, 1000);
+                    }
+                };
+                handler.post(runnable);
+            }
+        }
+    }
+
+
+
+
+
+
+  /*  public class NetworkTest {
+        private String interfaceName;
+        private Handler handler;
+        private TextView networkStatusTextView;
+        private long startTime;
+        private AtomicBoolean shouldStop = new AtomicBoolean(false);
+        private boolean isRunning = false;
+        private double lastRecordedTime = 0;
+        private Context context;
+        private ConnectivityManager.NetworkCallback networkCallback;  // 新增
+
+        public NetworkTest(String interfaceName, Handler handler, TextView networkStatusTextView, Context context) {
+            this.interfaceName = interfaceName;
+            this.handler = handler;
+            this.networkStatusTextView = networkStatusTextView;
+            this.startTime = System.currentTimeMillis();
+            this.context = context;
+            this.networkCallback = new ConnectivityManager.NetworkCallback() {  // 新增
+                @Override
+                public void onAvailable(Network network) {
+                    // 网络连接可用时调用
+                    Log.d("NetworkTest", "Network is available");
+                    if (!isRunning) {
+                        isRunning = true;
+                        shouldStop.set(false);  // 允许新线程
+                        startTime = System.currentTimeMillis();  // 重新开始计时
+                        handler.post(runnable);  // 重新开始Runnable
+                    }
+                }
+
+                @Override
+                public void onLost(Network network) {
+                    // 网络连接丢失时调用
+                    Log.d("NetworkTest", "Network is lost");
+                    isRunning = false;
+                    handler.removeCallbacks(runnable);  // 停止Runnable
+                    shouldStop.set(true);  // 停止新线程
+                    // 更新UI
+                    networkStatusTextView.setText("测试失败" + "\nDuration:" + lastRecordedTime + " s");
+                    // 打印当前的interfaceName
+                    Log.d("NetworkTest", "Interface disconnected: " + interfaceName);
+                }
+            };
+        }
+
+        public void start() {
+            if (!isRunning) {
+                isRunning = true;
+                Runnable runnable = new Runnable() {
+                    @Override
+                    public void run() {
+                        if (!isRunning) {
+                            Log.d("NetworkTest", "Not running");
+                            return;
+                        }
+
+                        new Thread(new Runnable() {
+                            @Override
+                            public void run() {
+                                if (shouldStop.get()) {
+                                    return;
+                                }
+
+                                // 检查网络接口是否已经启动
+                                if (!NetworkUtils.isInterfaceConnected(interfaceName, context)) {
+                                    Log.d("NetworkTest", "Interface " + interfaceName + " is not connected");
+                                    return;
+                                }
+
+                                final String ip = NetworkUtils.getNetWorkIp(interfaceName);
+                                Log.d("NetworkTest", "ip" + interfaceName);
+                                final String pingResult = NetworkUtils.ping("www.qq.com");
+
+                                // 在主线程中更新TextView
+                                runOnUiThread(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        if (!isRunning || shouldStop.get()) {
+                                            networkStatusTextView.setText("测试失败" + "\nDuration:" + lastRecordedTime + " s");
+                                            isRunning = false;
+                                            return;
+                                        }
+                                        long currentTime = System.currentTimeMillis();
+                                        long duration = currentTime - startTime;
+                                        double durationInSeconds = duration / 1000.0;
+                                        lastRecordedTime = durationInSeconds;  // 更新lastRecordedTime的值
+                                        networkStatusTextView.setText("IP: " + ip + "\nPing result: " + pingResult + "\nDuration: " + durationInSeconds + " s");
+                                    }
+                                });
+                            }
+                        }).start();
+
+                        // 每0.5秒执行一次
+                        handler.postDelayed(this, 500);
+                    }
+                };
+                handler.post(runnable);
+            }
+        }
+    }  */
 
     public static class NetworkUtils {
         public static String getNetWorkIp(String interfaceName) {
@@ -183,34 +383,22 @@ public class NetworkTestActivity extends AppCompatActivity {
 
             return "Ping output:\n" + pingResult ;
         }
-    }
-    public static class MyNetworkChangeReceiver extends BroadcastReceiver {
-        private Handler handler;
-        private Runnable runnable;
-        private TextView networkStatusTextView;
-
-        public MyNetworkChangeReceiver(Handler handler, Runnable runnable, TextView networkStatusTextView) {
-            this.handler = handler;
-            this.runnable = runnable;
-            this.networkStatusTextView = networkStatusTextView;
+        public static boolean isNetworkConnected(Context context) {
+            ConnectivityManager cm = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
+            NetworkInfo activeNetwork = cm.getActiveNetworkInfo();
+            return activeNetwork != null && activeNetwork.isConnected();
         }
-
-        @Override
-        public void onReceive(Context context, Intent intent) {
-            if (ConnectivityManager.CONNECTIVITY_ACTION.equals(intent.getAction())) {
-                boolean noConnectivity = intent.getBooleanExtra(
-                        ConnectivityManager.EXTRA_NO_CONNECTIVITY, false
-                );
-
-                if (noConnectivity) {
-                    NetworkTestActivity.isRunning.set(false);
-                    handler.removeCallbacks(runnable);  // 停止Runnable
-                    // 不更新UI
-                } else {
-                    NetworkTestActivity.isRunning.set(true);
-                }
+        public static boolean isInterfaceConnected(String interfaceName, Context context) {
+            try {
+                NetworkInterface networkInterface = NetworkInterface.getByName(interfaceName);
+                return networkInterface != null && networkInterface.isUp();
+            } catch (SocketException e) {
+                e.printStackTrace();
+                return false;
             }
         }
     }
 }
+
+
 

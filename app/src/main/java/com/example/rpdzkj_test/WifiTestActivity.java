@@ -22,18 +22,22 @@ import android.content.Context;
 
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
+import java.util.concurrent.atomic.AtomicBoolean;
+
 
 
 public class WifiTestActivity extends AppCompatActivity {
 
     private TextView networkStatusTextView;
 
-    private long startTime;
+
     public static boolean isRunning = false;
     private  Runnable runnable;
     private Handler handler = new Handler();
     private MyNetworkChangeReceiver wifiNetworkChangeReceiver;
-
+    private static AtomicBoolean shouldStop = new AtomicBoolean(false);
+    private static double lastRecordedTime = 0;
+    private static long startTime = System.currentTimeMillis();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -42,53 +46,62 @@ public class WifiTestActivity extends AppCompatActivity {
 
         networkStatusTextView = findViewById(R.id.wifi_network_status_text_view);
 
-        startTime = System.currentTimeMillis();
+
 
          if (!isRunning) {
                     isRunning = true;
 
                     // 获取IP地址并开始计时
-                  //  final String ip = NetworkUtils.getNetWorkIp();
-                 final    String ip = NetworkUtils.getNetWorkIp("wlan0");
-             final long startTime = System.currentTimeMillis();
 
-             runnable = new Runnable() {
+                 final    String ip = NetworkUtils.getNetWorkIp("wlan0");
+
+
+          runnable = new Runnable() {
                  @Override
                  public void run() {
                      if (!isRunning) {
-                         // 网络断开时，只显示持续时间
-                         long currentTime = System.currentTimeMillis();
-                         long duration = currentTime - startTime;
-                         double durationInSeconds = duration / 1000.0;
-                         networkStatusTextView.setText("Duration: " + durationInSeconds + " s");
                          return;
                      }
 
                      new Thread(new Runnable() {
                          @Override
                          public void run() {
+                             if (shouldStop.get()) {
+
+                                 return;
+                             }
+
                              final String ip = NetworkUtils.getNetWorkIp("wlan0");
                              final String pingResult = NetworkUtils.ping("www.qq.com");
+
 
                              // 在主线程中更新TextView
                              runOnUiThread(new Runnable() {
                                  @Override
                                  public void run() {
-                                     long currentTime = System.currentTimeMillis();
-                                     long duration = currentTime - startTime;
+                                     if (!isRunning) {
+                                         return;
+                                     }
+                                     if (shouldStop.get()) {
+
+                                         networkStatusTextView.setText("测试失败" + "\nDuration:" + lastRecordedTime + " s" );
+                                         isRunning = false;
+                                         return;
+                                     }
+                                        long currentTime = System.currentTimeMillis();
+                                      long duration = currentTime - startTime;
                                      double durationInSeconds = duration / 1000.0;
+                                     lastRecordedTime = durationInSeconds;
                                      networkStatusTextView.setText("IP: " + ip + "\nPing result: " + pingResult + "\nDuration: " + durationInSeconds + " s");
                                  }
                              });
                          }
                      }).start();
 
-                     // 每秒执行一次
-                     handler.postDelayed(this, 100);
+                     // 每0.7秒执行一次
+                     handler.postDelayed(this, 700);
                  }
              };
-
-
 
              handler.post(runnable);
                 }
@@ -184,8 +197,6 @@ public class WifiTestActivity extends AppCompatActivity {
             this.runnable = runnable;
             this.networkStatusTextView = networkStatusTextView;
         }
-
-
         @Override
         public void onReceive(Context context, Intent intent) {
             if (ConnectivityManager.CONNECTIVITY_ACTION.equals(intent.getAction())) {
@@ -196,13 +207,23 @@ public class WifiTestActivity extends AppCompatActivity {
                 if (noConnectivity) {
                     MainActivity.isRunning = false;
                     handler.removeCallbacks(runnable);  // 停止Runnable
+                    shouldStop.set(true);  // 停止新线程
                     // 不更新UI
                 } else {
                     MainActivity.isRunning = true;
+                    shouldStop.set(false);  // 允许新线程
+                    startTime = System.currentTimeMillis();  // 重新开始计时
+                    handler.post(runnable);  // 重新开始Runnable
                 }
             }
+
+
         }
 
     }
 
+
+
 }
+
+

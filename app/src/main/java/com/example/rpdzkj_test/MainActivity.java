@@ -34,8 +34,7 @@ import android.util.Log;
 import java.lang.reflect.Method;
 import java.util.Timer;
 import java.util.TimerTask;
-import java.util.HashMap;
-import java.util.Map;
+
 
 
 /*
@@ -55,7 +54,6 @@ import java.net.NetworkInterface;
 import java.util.Collections;
 import java.net.HttpURLConnection;
 import java.net.URL;
-
  */
 import java.util.List;
 import android.content.pm.ResolveInfo;
@@ -66,6 +64,8 @@ import android.net.Uri;
 import androidx.annotation.NonNull;
 import android.content.ComponentName;
 import android.content.ActivityNotFoundException;
+import java.util.ArrayList;
+import android.os.Build;
 
 
 
@@ -114,13 +114,18 @@ public class MainActivity extends AppCompatActivity {
     private Runnable checkStorageTask;
     private long usedSpace = 0;
     private long totalSpace = 0;
-
+    //private static final int MY_PERMISSIONS_REQUEST = 1;
+    private final int REQUEST_PERMISSION_CODE = 1001;
 
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+         initPermission();
+
+
+
 
         // 尝试提升权限
         boolean success = upgradeRootPermission(getPackageCodePath());
@@ -146,30 +151,7 @@ public class MainActivity extends AppCompatActivity {
         UsbStatusTextView = findViewById(R.id.usb_status_text_view);
         M2StatusTextView = findViewById(R.id.M2_status_text_view);
         androidx.appcompat.app.ActionBar actionBar = getSupportActionBar();
-        // 注册广播接收器
-        // 注册storageStateReceiver
-      /*  IntentFilter storageFilter = new IntentFilter();
-        storageFilter.addAction(Intent.ACTION_MEDIA_MOUNTED);
-        storageFilter.addAction(Intent.ACTION_MEDIA_UNMOUNTED);
-        storageFilter.addDataScheme("file");
-        registerReceiver(storageStateReceiver, storageFilter);
-*/
 
-
-        File sdCardRoot = getExternalFilesDir(null);
-        String sdCardPath = sdCardRoot.getAbsolutePath();
-        Log.d(TAG, "SD 卡路径：" + sdCardPath);
-
-        // 获取其他外部存储路径
-        File[] externalFilesDirs = getExternalFilesDirs(null);
-        String externalPath = null;
-
-        for (File dir : externalFilesDirs) {
-            if (dir != null) {
-                externalPath = dir.getAbsolutePath();
-                Log.d(TAG, "其他外部存储路径：" + externalPath);
-            }
-        }
 
         if (actionBar != null) {
             // 设置logo
@@ -206,7 +188,7 @@ public class MainActivity extends AppCompatActivity {
         wifiButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                setProperty("wifi_test", "1");
+               setProperty("wifi_test", "1");
                 wifiEnabledCount = 0;
                 wifiCountTextView.setText("WiFi打开成功的次数: " + wifiEnabledCount);
                 wifiButton.setEnabled(false);
@@ -337,7 +319,7 @@ public class MainActivity extends AppCompatActivity {
                         {
                             UsbStatusTextView.setText("U盘已挂载");
                         }else {
-                            sdStatusTextView.setText("U盘未挂载或未格式化");
+                            UsbStatusTextView.setText("U盘未挂载或未格式化");
                             setSystemProperty("udisk_test",  "0");
                             return;
                         }
@@ -663,14 +645,13 @@ public class MainActivity extends AppCompatActivity {
         });
 
         Button ethButton = findViewById(R.id.ethernet_status_test_button);
-
-
         ethButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 Intent intent = new Intent(MainActivity.this, NetworkTestActivity.class);
                 startActivity(intent);
             }
+
          /*  public void onClick(View v) {
                 ethButton.setEnabled(false);
                 final long startTime = System.currentTimeMillis();
@@ -702,6 +683,35 @@ public class MainActivity extends AppCompatActivity {
                     networkStatusTextView.setText("IP not found");
                 }
             } */
+        });
+
+
+        Button uartButton = findViewById(R.id.uart_test_button);
+        uartButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent(MainActivity.this, UartTestActivity.class);
+                startActivity(intent);
+            }
+        });
+
+        Button canButton = findViewById(R.id.can_test_button);
+        canButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent(MainActivity.this, CanTestActivity.class);
+                startActivity(intent);
+            }
+        });
+
+
+        Button spiButton = findViewById(R.id.spi_test_button);
+        spiButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent(MainActivity.this, SpiTestActivity.class);
+                startActivity(intent);
+            }
         });
 
 
@@ -822,101 +832,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
 
-/*
-    private long getUsedSpace(File directory) {
-        StatFs statFs = new StatFs(directory.getPath());
-        long blockSize = statFs.getBlockSizeLong();
-        long totalBlocks = statFs.getBlockCountLong();
-        long availableBlocks = statFs.getAvailableBlocksLong();
-        return (totalBlocks - availableBlocks) * blockSize;
-    }
 
-    private long getTotalSpace(File directory) {
-        StatFs statFs = new StatFs(directory.getPath());
-        long blockSize = statFs.getBlockSizeLong();
-        long totalBlocks = statFs.getBlockCountLong();
-        return totalBlocks * blockSize;
-    }
-
-    private String formatFileSize(long size) {
-        return Formatter.formatFileSize(this, size);
-    }
-
-
-    private String getStorageType(Context context, String path) {
-        StorageManager storageManager = (StorageManager) context.getSystemService(Context.STORAGE_SERVICE);
-        List
-
-                <StorageVolume> volumes = storageManager.getStorageVolumes();
-        for (StorageVolume volume : volumes) {
-            File dir = volume.getDirectory();
-            if (dir != null && path.startsWith(dir.getAbsolutePath())) {
-                String description = volume.getDescription(context);
-                Log.d(TAG, "存储卷描述：" + description);
-                if (description.toLowerCase().contains("usb") || description.toLowerCase().contains("sd") || description.toLowerCase().contains("u")) {
-                    // 这是一个可移动的存储设备，可能是USB设备、SD卡或U盘
-                    return "USB/SD";
-                } else {
-                    // 这是一个内部存储设备，可能是SATA设备或M.2设备
-                    return "SATA/M.2";
-                }
-            }
-        }
-        // 未找到匹配的存储设备
-        return "Unknown";
-    }
-
-    private void checkStorageState(String path, String deviceName) {
-        File directory = new File(path);
-        if (directory.exists()) {
-            // 存储设备已挂载
-            StringBuilder status = new StringBuilder();
-            // 获取已使用的容量
-            long usedSpace = getUsedSpace(directory);
-            // 获取总容量
-            long totalSpace = getTotalSpace(directory);
-            status.append(deviceName).append(" 已挂载    ")
-                    .append("已使用空间：").append(formatFileSize(usedSpace))
-                    .append(" / 总容量：").append(formatFileSize(totalSpace)).append("\n");
-            String newStatus = status.toString();
-            // 根据设备类型更新对应的TextView
-            switch (deviceName) {
-                case "M.2":
-                    usedSpaceTextView3.setText(newStatus);
-                    break;
-                case "SATA":
-                    usedSpaceTextView1.setText(newStatus);
-                    break;
-                case "USB":
-                    usedSpaceTextView2.setText(newStatus);
-                    break;
-                case "SD":
-                    usedSpaceTextView.setText(newStatus);
-                    break;
-            }
-            // 1秒后再次执行此任务
-            handler.postDelayed(() -> checkStorageState(path, deviceName), 1000);
-        } else {
-            // 存储设备未挂载或已被拔出
-            String newStatus = deviceName + " 未挂载或已被拔出\n";
-            // 根据设备类型更新对应的TextView
-            switch (deviceName) {
-                case "M.2":
-                    usedSpaceTextView3.setText(newStatus);
-                    break;
-                case "SATA":
-                    usedSpaceTextView1.setText(newStatus);
-                    break;
-                case "USB":
-                    usedSpaceTextView2.setText(newStatus);
-                    break;
-                case "SD":
-                    usedSpaceTextView.setText(newStatus);
-                    break;
-            }
-        }
-    }
-*/
 
     private String getSystemProperty(String propertyName) {
         Process process = null;
@@ -1021,42 +937,8 @@ public class MainActivity extends AppCompatActivity {
         return false;
     }
 
-    /*public void startNApp(String packageName, String activityName) {
-        Intent intent = new Intent();
-        ComponentName cn = new ComponentName(packageName, activityName);
-        intent.setComponent(cn);
-        try {
-            startActivity(intent);
-        } catch (ActivityNotFoundException e) {
-            Toast.makeText(this, "没有找到应用", Toast.LENGTH_SHORT).show();
-        }
-    }
 
-     */
-/*
-    public void seStartApp(String packageName, String activityName) {
-        Intent intent = new Intent();
-        intent.setClassName(packageName, activityName);
 
-        try {
-            startActivity(intent);
-        } catch (ActivityNotFoundException e) {
-            Toast.makeText(this, "没有找到应用", Toast.LENGTH_SHORT).show();
-        }
-    }
-
- */
-    public void seStartApp(String packageName, String activityName) {
-        Intent intent = new Intent(Intent.ACTION_MAIN);
-        intent.addCategory(Intent.CATEGORY_LAUNCHER);
-        intent.setComponent(new ComponentName(packageName, activityName));
-
-        try {
-            startActivity(intent);
-        } catch (ActivityNotFoundException e) {
-            Toast.makeText(this, "没有找到应用", Toast.LENGTH_SHORT).show();
-        }
-    }
 
 
 
@@ -1086,7 +968,46 @@ public class MainActivity extends AppCompatActivity {
             }
         }
     }
+/*
+    @Override
+    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
+        switch (requestCode) {
+            case MY_PERMISSIONS_REQUEST: {
+                if (grantResults.length > 0
+                        && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    // Permission was granted
+                    // You can use the location information here
+                } else {
+                    // Permission denied
+                    // Disable the functionality that depends on this permission
+                }
+                return;
+            }
 
+            // Other 'case' lines to check for other permissions this app might request
+        }
+    }
+
+ */
+private void initPermission() {
+    List<String> mPermissionList = new ArrayList<>();
+    // Android 版本大于等于 12 时，申请新的蓝牙权限
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+        mPermissionList.add(Manifest.permission.BLUETOOTH_SCAN);
+        mPermissionList.add(Manifest.permission.BLUETOOTH_ADVERTISE);
+        mPermissionList.add(Manifest.permission.BLUETOOTH_CONNECT);
+        mPermissionList.add(Manifest.permission.WRITE_EXTERNAL_STORAGE);
+        mPermissionList.add(Manifest.permission.READ_EXTERNAL_STORAGE);
+        //根据实际需要申请定位权限
+        mPermissionList.add(Manifest.permission.ACCESS_COARSE_LOCATION);
+        mPermissionList.add(Manifest.permission.ACCESS_FINE_LOCATION);
+    } else {
+        mPermissionList.add(Manifest.permission.ACCESS_COARSE_LOCATION);
+        mPermissionList.add(Manifest.permission.ACCESS_FINE_LOCATION);
+    }
+
+    ActivityCompat.requestPermissions(this, mPermissionList.toArray(new String[0]), REQUEST_PERMISSION_CODE);
+}
 
 
 

@@ -10,7 +10,7 @@
         android:layout_marginTop="1dp"
         android:layout_marginLeft="70dp"
         android:text="wifi_test："
-        android:textSize="12sp" />
+        android:textSize="20sp" />
 
 
 </LinearLayout>

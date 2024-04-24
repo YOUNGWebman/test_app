@@ -81,6 +81,8 @@
         android:text="reboot test"
         android:textSize="8sp" />
 
+
+
     <Button
         android:id="@+id/stop_button"
         android:layout_width="80dp"
@@ -88,6 +90,33 @@
         android:layout_marginTop="60dp"
         android:layout_marginLeft="150dp"
         android:text="STOP"
+        android:textSize="8sp" />
+
+    <Button
+        android:id="@+id/uart_test_button"
+        android:layout_width="80dp"
+        android:layout_height="50dp"
+        android:layout_marginTop="60dp"
+        android:layout_marginLeft="250dp"
+        android:text="uart test"
+        android:textSize="8sp" />
+
+    <Button
+        android:id="@+id/can_test_button"
+        android:layout_width="80dp"
+        android:layout_height="50dp"
+        android:layout_marginTop="60dp"
+        android:layout_marginLeft="350dp"
+        android:text="can test"
+        android:textSize="8sp" />
+
+    <Button
+        android:id="@+id/spi_test_button"
+        android:layout_width="80dp"
+        android:layout_height="50dp"
+        android:layout_marginTop="60dp"
+        android:layout_marginLeft="450dp"
+        android:text="spi test"
         android:textSize="8sp" />
 
     <TextView
