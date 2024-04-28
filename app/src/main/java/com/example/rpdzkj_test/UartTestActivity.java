@@ -57,6 +57,12 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.HashMap;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.List;
+import java.util.ArrayList;
+import java.util.concurrent.Future;
+import java.util.concurrent.ExecutionException;
+
+
 
 
 
@@ -76,6 +82,7 @@ public class UartTestActivity extends AppCompatActivity {
     ArrayList<TextView> sendTextViewList = null;
     ArrayList<TextView> receiveTextViewList = null;
     ArrayList<TextView> countTextViewList = null;
+    List<AtomicBoolean> shouldStops = null;
     int successCount =0;
     int failureCount =0;
     int lastCount = 0;
@@ -125,6 +132,7 @@ public class UartTestActivity extends AppCompatActivity {
         sendTextViewList = new ArrayList<>();
         receiveTextViewList = new ArrayList<>();
         countTextViewList = new ArrayList<>();
+        shouldStops = new ArrayList<>();
 
         // 新增的代码
       //  GridLayout textViewLayout = null;
@@ -161,6 +169,9 @@ public class UartTestActivity extends AppCompatActivity {
 
                     TextView countTextView = view.findViewById(R.id.countTextView);
                     countTextViewList.add(countTextView);
+
+                    AtomicBoolean shouldStop = new AtomicBoolean(false);
+                    shouldStops.add(shouldStop);
 
                     // 将整个view添加到textViewLayout
                     textViewLayout.addView(view, params);
@@ -287,12 +298,12 @@ public class UartTestActivity extends AppCompatActivity {
         return new CmdResult(exitVal, output.toString());
     }
 
-
-  /*  public void doTest() {
+public void doTest() {
         executor = Executors.newFixedThreadPool(10);
         String str = "012345678";
         final String testString =  str + str;
         String uartSettings = "fffffff4:4:1cb2:a30:3:1c:7f:15:4:0:1:0:11:13:1a:0:12:f:17:16:0:0:0";
+
         for (int i = 0; i < checkBoxArrayList.size(); i ++) {
             CheckBox checkBox = checkBoxArrayList.get(i);
             if (checkBox.isChecked()) {
@@ -300,9 +311,11 @@ public class UartTestActivity extends AppCompatActivity {
                 Log.d("RRRRR do uart", uart.getName());
                 final int finalI = i;
 
+
                 Future<?> future = executor.submit(new Runnable() {
                     @Override
                     public void run() {
+
                         CmdResult result;
                         String testFilePath0 =  "/data/" ;
                         upgradeRootPermission(testFilePath0);
@@ -326,90 +339,32 @@ public class UartTestActivity extends AppCompatActivity {
                         Log.d("RRRRRR result ", uart.getName() + " " + result.output);
 
                         boolean isSuccess = testString.equals(result.output);
+                      //  final AtomicBoolean shouldStop = new AtomicBoolean(false);
+
+
                         runOnUiThread(() -> {
-                            if (isSuccess) {
-                                successCount++;
-                                sendTextViewList.get(finalI).setText("发送内容：" + testString);
-                                receiveTextViewList.get(finalI).setText("接收内容：" + result.output);
-                                countTextViewList.get(finalI).setText( "测试次数：" + successCount );
-                            } else {
-                                // 测试失败，停止测试
-                                Thread.currentThread().interrupt();
-                                sendTextViewList.get(finalI).setText("测试失败");
-                                receiveTextViewList.get(finalI).setText("测试失败");
-
-                              //  countTextViewList.get(finalI).setText( "测试失败：" + successCount );
-                                return;
-                            }
-                        });
-                    }
-                });
-            }
-        }
-
-        executor.shutdown();
-    } */
-
- public void doTest() {
-        executor = Executors.newFixedThreadPool(10);
-        String str = "012345678";
-        final String testString =  str + str;
-        String uartSettings = "fffffff4:4:1cb2:a30:3:1c:7f:15:4:0:1:0:11:13:1a:0:12:f:17:16:0:0:0";
-        for (int i = 0; i < checkBoxArrayList.size(); i ++) {
-            CheckBox checkBox = checkBoxArrayList.get(i);
-            if (checkBox.isChecked()) {
-                File uart = uartsToTest.get(i);
-                Log.d("RRRRR do uart", uart.getName());
-                final int finalI = i;
-                final AtomicBoolean shouldStop = new AtomicBoolean(false);
-
-                Future<?> future = executor.submit(new Runnable() {
-                    @Override
-                    public void run() {
-                        CmdResult result;
-                        String testFilePath0 =  "/data/" ;
-                        upgradeRootPermission(testFilePath0);
-                        String testFilePath = testFilePath0 + uart.getName() + ".txt";
-                        upgradeRootPermission(testFilePath);
-                        String cmdTouch = String.format("touch %s \n", testFilePath);
-                        String cmd0 = String.format("stty -F %s %s \n", uart.getAbsolutePath(), uartSettings);
-                        String cmd1 = String.format("cat %s > %s & \n", uart.getAbsolutePath(), testFilePath);
-                        String cmdW = String.format("echo \"%s\" > %s \n", testString, uart.getAbsolutePath());
-                        String cmdR = String.format("cat %s \n", testFilePath);
-                        String cmdRM = String.format("rm %s \n", testFilePath);
-                        String cmdClean = "killall cat\n";
-
-                        runCmd(cmdTouch, 1);
-                        runCmd(cmd0, 1);
-                        runCmd(cmd1, 1);
-                        runCmd(cmdW, 1);
-                        result = runCmd(cmdR, 1);
-                        runCmd(cmdRM, 1);
-                        runCmd(cmdClean, 1);
-                        Log.d("RRRRRR result ", uart.getName() + " " + result.output);
-
-                        boolean isSuccess = testString.equals(result.output);
-                       runOnUiThread(() -> {
-                            if (isSuccess) {
-                                if (!shouldStop.get()) {
+                           if (shouldStops.get(finalI).get()) {
+                               // 测试已经失败，不再更新UI
+                               return;
+                           }
+                            if (isSuccess && !shouldStops.get(finalI).get()) {
+                                //if (!shouldStop.get()) {
                                     successCount++;
                                     sendTextViewList.get(finalI).setText("发送内容：" + testString);
                                     receiveTextViewList.get(finalI).setText("接收内容：" + result.output);
                                     countTextViewList.get(finalI).setText( "测试次数：" + successCount );
-                                }
+                                //}
                             } else {
                                 // 测试失败，停止测试
-                                shouldStop.set(true);
+                                shouldStops.get(finalI).set(true);
                                 sendTextViewList.get(finalI).setText("测试失败");
                                 receiveTextViewList.get(finalI).setText("测试失败");
                                 // 停止增加successCount
-                                return;
+                                executor.shutdownNow();
+                                Thread.currentThread().interrupt();
                             }
                         });
-                        // 如果测试失败，中断当前线程
-                        if (!isSuccess) {
-                            Thread.currentThread().interrupt();
-                        }
+
                     }
                 });
             }
@@ -418,76 +373,10 @@ public class UartTestActivity extends AppCompatActivity {
         executor.shutdown();
     }
 
-  /*  public void doTest() {
-        executor = Executors.newFixedThreadPool(10);
-        String str = "012345678";
-        final String testString =  str + str;
-        String uartSettings = "fffffff4:4:1cb2:a30:3:1c:7f:15:4:0:1:0:11:13:1a:0:12:f:17:16:0:0:0";
-        for (int i = 0; i < checkBoxArrayList.size(); i ++) {
-            CheckBox checkBox = checkBoxArrayList.get(i);
-            if (checkBox.isChecked()) {
-                File uart = uartsToTest.get(i);
-                Log.d("RRRRR do uart", uart.getName());
-                final int finalI = i;
-                final AtomicBoolean shouldStop = new AtomicBoolean(false);
 
-                Future<?> future = executor.submit(new Runnable() {
-                    @Override
-                    public void run() {
-                        while (!Thread.currentThread().isInterrupted()) {
-                            CmdResult result;
-                            String testFilePath0 =  "/data/" ;
-                            upgradeRootPermission(testFilePath0);
-                            String testFilePath = testFilePath0 + uart.getName() + ".txt";
-                            upgradeRootPermission(testFilePath);
-                            String cmdTouch = String.format("touch %s \n", testFilePath);
-                            String cmd0 = String.format("stty -F %s %s \n", uart.getAbsolutePath(), uartSettings);
-                            String cmd1 = String.format("cat %s > %s & \n", uart.getAbsolutePath(), testFilePath);
-                            String cmdW = String.format("echo \"%s\" > %s \n", testString, uart.getAbsolutePath());
-                            String cmdR = String.format("cat %s \n", testFilePath);
-                            String cmdRM = String.format("rm %s \n", testFilePath);
-                            String cmdClean = "killall cat\n";
 
-                            runCmd(cmdTouch, 1);
-                            runCmd(cmd0, 1);
-                            runCmd(cmd1, 1);
-                            runCmd(cmdW, 1);
-                            result = runCmd(cmdR, 1);
-                            runCmd(cmdRM, 1);
-                            runCmd(cmdClean, 1);
-                            Log.d("RRRRRR result ", uart.getName() + " " + result.output);
 
-                            boolean isSuccess = testString.equals(result.output);
-                            runOnUiThread(() -> {
-                                if (isSuccess) {
-                                    if (!shouldStop.get()) {
-                                        successCount++;
-                                        sendTextViewList.get(finalI).setText("发送内容：" + testString);
-                                        receiveTextViewList.get(finalI).setText("接收内容：" + result.output);
-                                        countTextViewList.get(finalI).setText( "测试次数：" + successCount );
-                                    }
-                                } else {
-                                    // 测试失败，停止测试
-                                    shouldStop.set(true);
-                                    sendTextViewList.get(finalI).setText("测试失败");
-                                    receiveTextViewList.get(finalI).setText("测试失败");
-                                    // 停止增加successCount
-                                    return;
-                                }
-                            });
-                            // 如果测试失败，中断当前线程
-                            if (!isSuccess || Thread.currentThread().isInterrupted()) {
-                                Thread.currentThread().interrupt();
-                                return;
-                            }
-                        }
-                    }
-                });
-            }
-        }
 
-        executor.shutdown();
-    } */
 
 
 

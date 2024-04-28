@@ -54,14 +54,14 @@
         android:text="CAN1发送"
         android:textSize="16sp"
         android:layout_marginTop="50dp"
-        android:layout_marginLeft="700dp"/>
+        android:layout_marginLeft="500dp"/>
 
    <TextView
         android:id="@+id/can1Recive"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="100dp"
-        android:layout_marginLeft="700dp"
+        android:layout_marginLeft="500dp"
         android:text="CAN1接收"
         android:textSize="16sp"
         />
@@ -73,7 +73,7 @@
         android:text="CAN1测试结果"
         android:textSize="16sp"
         android:layout_marginTop="150dp"
-        android:layout_marginLeft="700dp" />
+        android:layout_marginLeft="500dp" />
 
 
 
