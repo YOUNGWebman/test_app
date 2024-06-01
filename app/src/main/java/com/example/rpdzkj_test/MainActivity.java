@@ -545,6 +545,13 @@ public class MainActivity extends AppCompatActivity {
 
         });
 
+        if(getSystemProperty("ro.product.brand").equals("Allwinner"))
+        {
+            CameraTestButton.setVisibility(View.GONE);
+            RebootTestButton.setVisibility(View.GONE);
+        }
+
+
         wifiCountTextView = findViewById(R.id.wifi_count_text_view);
         bluetoothCountTextView = findViewById(R.id.bluetooth_count_text_view);
 

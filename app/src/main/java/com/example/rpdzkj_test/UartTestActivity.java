@@ -84,23 +84,17 @@ public class UartTestActivity extends AppCompatActivity {
     ArrayList<TextView> countTextViewList = null;
     List<AtomicBoolean> shouldStops = null;
     int successCount =0;
-    int failureCount =0;
-    int lastCount = 0;
     ExecutorService executor = null;
-   // private final AtomicBoolean shouldStop = new AtomicBoolean(false);
 
 
     private ArrayList<File> getUsableUART() {
         File file = new File("/dev/");
         FilenameFilter filenameFilter = (file1, s) -> (s.contains("ttyS") || s.contains("ttyAS"));
         File[] files = file.listFiles(filenameFilter);
-
         if (files != null)
             return new ArrayList<>(Arrays.asList(files));
-
         return null;
     }
-
     public ArrayList<File> filterUart(ArrayList<File> list) {
         String vendorName = runCmd("getprop ro.hardware", 1).output;
         String deviceName = runCmd("getprop ro.product.device", 1).output;
@@ -110,13 +104,9 @@ public class UartTestActivity extends AppCompatActivity {
             return null;
         Log.d("BoardInfo", String.format("vendor [%s]\ndevice [%s]\nmodel  [%s]", vendorName, deviceName, modelName));
 
-   //     String ignored = parseIgnoreValues(vendorName, deviceName, modelName);
-
         Iterator<File> iterator = list.iterator();
         while (iterator.hasNext()){
             File file = iterator.next();
-           // if(ignored.contains(file.getName()))
-             //   iterator.remove();
         }
 
         return list;
@@ -135,7 +125,6 @@ public class UartTestActivity extends AppCompatActivity {
         shouldStops = new ArrayList<>();
 
         // 新增的代码
-      //  GridLayout textViewLayout = null;
         textViewLayout = (GridLayout)findViewById(R.id.textViewLayout);
 
         final CountDownLatch latch = new CountDownLatch(1);
@@ -189,70 +178,6 @@ public class UartTestActivity extends AppCompatActivity {
 
         return true;
     }
-
-
-   /* public boolean initTest() {
-        uartsToTest = filterUart(getUsableUART());
-
-        if(uartsToTest == null)
-            return false;
-
-        checkBoxArrayList = new ArrayList<>();
-        sendTextViewList = new ArrayList<>();
-        receiveTextViewList = new ArrayList<>();
-        countTextViewList = new ArrayList<>();
-
-        final CountDownLatch latch = new CountDownLatch(1);
-        final int w = width;
-        runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-
-
-               LayoutInflater inflater = LayoutInflater.from(UartTestActivity.this);
-                for (int i = 0; i < uartsToTest.size(); i ++) {
-                    // 创建和初始化params变量
-                    GridLayout.LayoutParams params = new GridLayout.LayoutParams();
-                    params.width = w;
-                    params.height = GridLayout.LayoutParams.WRAP_CONTENT;
-                    params.setMargins(margin, margin *4, margin, margin);
-
-                    // 使用params变量
-                    CheckBox checkBox = new CheckBox(UartTestActivity.this);
-                    checkBox.setText(uartsToTest.get(i).getName());
-                    uartTestResultLayout.addView(checkBox, params);
-                    checkBoxArrayList.add(checkBox);
-
-                    // 创建和初始化view变量
-                    View view = inflater.inflate(R.layout.activity_uart_item_test, null);
-
-                    TextView sendTextView = view.findViewById(R.id.sendTextView);
-                    sendTextViewList.add(sendTextView);
-
-                    TextView receiveTextView = view.findViewById(R.id.receiveTextView);
-                    receiveTextViewList.add(receiveTextView);
-
-                    TextView countTextView = view.findViewById(R.id.countTextView);
-                    countTextViewList.add(countTextView);
-
-                    // 将整个view添加到uartTestResultLayout
-                    uartTestResultLayout.addView(view, params);
-                }
-
-                latch.countDown();
-            }
-        });
-
-        try {
-            latch.await();
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-
-        return true;
-    } */
-
-
 
     public CmdResult runCmd(String cmd, int timeout) {
         java.lang.Process process = null;
@@ -311,7 +236,6 @@ public void doTest() {
                 Log.d("RRRRR do uart", uart.getName());
                 final int finalI = i;
 
-
                 Future<?> future = executor.submit(new Runnable() {
                     @Override
                     public void run() {
@@ -324,22 +248,27 @@ public void doTest() {
                         String cmdTouch = String.format("touch %s \n", testFilePath);
                         String cmd0 = String.format("stty -F %s %s \n", uart.getAbsolutePath(), uartSettings);
                         String cmd1 = String.format("cat %s > %s & \n", uart.getAbsolutePath(), testFilePath);
-                        String cmdW = String.format("echo \"%s\" > %s \n", testString, uart.getAbsolutePath());
+                        String cmdW = String.format("echo \"%s\" > %s  \n", testString, uart.getAbsolutePath());
                         String cmdR = String.format("cat %s \n", testFilePath);
                         String cmdRM = String.format("rm %s \n", testFilePath);
                         String cmdClean = "killall cat\n";
-
                         runCmd(cmdTouch, 1);
                         runCmd(cmd0, 1);
                         runCmd(cmd1, 1);
                         runCmd(cmdW, 1);
+                        try {
+                            Thread.sleep(100);  // 延迟1秒
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
+
                         result = runCmd(cmdR, 1);
+
+                        boolean isSuccess = testString.equals(result.output);
                         runCmd(cmdRM, 1);
                         runCmd(cmdClean, 1);
                         Log.d("RRRRRR result ", uart.getName() + " " + result.output);
 
-                        boolean isSuccess = testString.equals(result.output);
-                      //  final AtomicBoolean shouldStop = new AtomicBoolean(false);
 
 
                         runOnUiThread(() -> {
@@ -373,17 +302,6 @@ public void doTest() {
         executor.shutdown();
     }
 
-
-
-
-
-
-
-
-
-
-
-
     public class CmdResult {
         CmdResult(int exitVal, String output) {
             this.exitVal = exitVal;
@@ -393,7 +311,7 @@ public void doTest() {
         public String output;
     }
 
-    final int margin = 7;
+    final int margin = 2;
     final int col = 4;
     int width = 0;
     @Override
@@ -401,40 +319,20 @@ public void doTest() {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_uart_test);
         // 初始化checkBoxArrayList
-       // checkBoxArrayList = new ArrayList<>();
         resultHandler = new Handler(Looper.getMainLooper()) {
             @Override
             public void handleMessage(Message msg) {
 
                 CheckBox checkBox = (CheckBox) msg.obj;
                 checkBox.setTextColor(msg.arg1);
-            //    Button btn = (Button) msg.obj;
-              //  btn.setBackgroundTintList(ColorStateList.valueOf(msg.arg1));
+
             }
         };
-
-        //ControlButtonUtil.initControlButtonView(this);
-
         uartTestResultLayout = (GridLayout)findViewById(R.id.uartTestLayout);
         DisplayMetrics displayMetrics = getResources().getDisplayMetrics();
         int screenWidth = displayMetrics.widthPixels;
         width = (screenWidth / col - 2 * margin);
-
-     /*  new Thread(() -> {
-            if(initTest())
-                doTest();
-        }).start(); */
-
         initTest();
-     /*   Button startButton = findViewById(R.id.startButton);
-        startButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                // 在这里开始测试
-                doTest();
-            }
-        }); */
-
         Button startButton = findViewById(R.id.startButton);
         startButton.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -458,35 +356,6 @@ public void doTest() {
                 });
             }
         });
-
-    /*   Button stopButton = findViewById(R.id.stopButton);
-        stopButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                startButton.setEnabled(true);
-                // 停止所有正在进行的测试
-                if (executor != null) {
-                    executor.shutdownNow();
-                }
-            }
-        }); */
-
-      /*  Button stopButton = findViewById(R.id.stopButton);
-        stopButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                startButton.setEnabled(true);
-                // 停止所有正在进行的测试
-                if (executor != null) {
-                    executor.shutdownNow();
-                }
-                // 设置shouldStop为true
-                shouldStop.set(true);
-            }
-        }); */
-
-
-
     }
 
     public static boolean upgradeRootPermission(String pkgCodePath) {
@@ -501,7 +370,6 @@ public void doTest() {
             os.flush();
             process.waitFor();
         } catch (Exception e) {
-          //  Log.e(TAG, "Error upgrading root permission", e);
             return false;
         } finally {
             try {
@@ -510,7 +378,6 @@ public void doTest() {
                 }
                 process.destroy();
             } catch (Exception e) {
-            //    Log.e(TAG, "Error closing process", e);
             }
         }
         return true;
