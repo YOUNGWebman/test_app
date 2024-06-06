@@ -7,6 +7,7 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.os.Handler;
 
+import android.os.SystemClock;
 import android.widget.TextView;
 
 import androidx.appcompat.app.AppCompatActivity;
@@ -111,7 +112,7 @@ public class NetworkTestActivity extends AppCompatActivity {
             this.interfaceName = interfaceName;
             this.handler = handler;
             this.networkStatusTextView = networkStatusTextView;
-            this.startTime = System.currentTimeMillis();
+            this.startTime = SystemClock.elapsedRealtime();
             this.context = context;
             this.isRunning = isRunning;
       //      this.isStopped = isStopped;
@@ -214,7 +215,7 @@ public class NetworkTestActivity extends AppCompatActivity {
                                             isRunning.set(false);
                                             return;
                                         }
-                                        long currentTime = System.currentTimeMillis();
+                                        long currentTime = SystemClock.elapsedRealtime();
                                         long duration = currentTime - startTime;
                                         double durationInSeconds = duration / 1000.0;
                                         int hours = (int) (durationInSeconds / 3600);

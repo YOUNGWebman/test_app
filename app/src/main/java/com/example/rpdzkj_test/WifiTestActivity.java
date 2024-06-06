@@ -29,6 +29,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import android.net.NetworkRequest;
 import android.net.NetworkCapabilities;
 import android.net.Network;
+import android.os.SystemClock;
+
 
 
 
@@ -89,7 +91,7 @@ public class WifiTestActivity extends AppCompatActivity {
             this.interfaceName = interfaceName;
             this.handler = handler;
             this.networkStatusTextView = networkStatusTextView;
-            this.startTime = System.currentTimeMillis();
+            this.startTime = SystemClock.elapsedRealtime();
             this.context = context;
             this.isRunning = isRunning;
             this.networkCallback = new ConnectivityManager.NetworkCallback() {
@@ -178,7 +180,7 @@ public class WifiTestActivity extends AppCompatActivity {
                                             isRunning.set(false);
                                             return;
                                         }
-                                        long currentTime = System.currentTimeMillis();
+                                        long currentTime = SystemClock.elapsedRealtime();
                                         long duration = currentTime - startTime;
                                         double durationInSeconds = duration / 1000.0;
                                         int hours = (int) (durationInSeconds / 3600);
