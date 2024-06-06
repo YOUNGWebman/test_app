@@ -1,5 +1,6 @@
 package com.example.rpdzkj_test;
 
+import com.example.rpdzkj_test.TimeDisplay;
 import android.bluetooth.BluetoothAdapter;
 import android.content.Context;
 import android.content.Intent;
@@ -34,27 +35,14 @@ import android.util.Log;
 import java.lang.reflect.Method;
 import java.util.Timer;
 import java.util.TimerTask;
+import android.graphics.Color;
 
 
 
-/*
-import android.os.Environment;
-import android.os.StatFs;
-import android.os.storage.StorageManager;
-import android.text.format.Formatter;
-import android.net.Uri;
-import java.util.List;
-import android.os.storage.StorageVolume;
-import android.net.wifi.WifiInfo;
-import android.net.wifi.WifiManager;
-import android.os.AsyncTask;
-import java.util.Objects;
-import java.net.InetAddress;
-import java.net.NetworkInterface;
-import java.util.Collections;
-import java.net.HttpURLConnection;
-import java.net.URL;
- */
+
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.Locale;
 import java.util.List;
 import android.content.pm.ResolveInfo;
 
@@ -66,6 +54,7 @@ import android.content.ComponentName;
 import android.content.ActivityNotFoundException;
 import java.util.ArrayList;
 import android.os.Build;
+import java.util.concurrent.TimeUnit;
 
 
 
@@ -98,6 +87,7 @@ public class MainActivity extends AppCompatActivity {
     private TextView UsbStatusTextView;
     private TextView sataStatusTextView;
     private TextView M2StatusTextView;
+    private TextView getTimeTextView;
 
     private TextView sdUsedSpaceTextView;
     private TextView udiskUsedSpaceTextView;
@@ -106,6 +96,7 @@ public class MainActivity extends AppCompatActivity {
 
     private  Runnable runnable;
     public static boolean isRunning = false;
+    private TimeDisplay timeDisplay;
 
     private TextView sdCheckView;
     private TextView udiskCheckView;
@@ -116,6 +107,7 @@ public class MainActivity extends AppCompatActivity {
     private long totalSpace = 0;
     //private static final int MY_PERMISSIONS_REQUEST = 1;
     private final int REQUEST_PERMISSION_CODE = 1001;
+   // private long startTime = 0;
 
 
     @Override
@@ -141,6 +133,7 @@ public class MainActivity extends AppCompatActivity {
         sataUsedSpaceTextView = findViewById(R.id.sata_used_space_text_view);
         udiskUsedSpaceTextView = findViewById(R.id.udisk_used_space_text_view);
         m2UsedSpaceTextView = findViewById(R.id.m2_used_space_text_view);
+        getTimeTextView = findViewById(R.id.get_time_text_view);
 
         sdCheckView = findViewById(R.id.sd_check_status_text_view);
         udiskCheckView = findViewById(R.id.udisk_check_status_text_view);
@@ -188,6 +181,7 @@ public class MainActivity extends AppCompatActivity {
         wifiButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                wifiButton.setBackgroundColor(Color.LTGRAY);
                setProperty("wifi_test", "1");
                 wifiEnabledCount = 0;
                 wifiCountTextView.setText("WiFi打开成功的次数: " + wifiEnabledCount);
@@ -201,6 +195,7 @@ public class MainActivity extends AppCompatActivity {
         bluetoothButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                bluetoothButton.setBackgroundColor(Color.LTGRAY);
                 bluetoothEnabledCount = 0;
                 bluetoothCountTextView.setText("蓝牙打开成功的次数: " + bluetoothEnabledCount);
                 bluetoothButton.setEnabled(false);
@@ -227,21 +222,8 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 sdTestButton.setEnabled(false);
+                sdTestButton.setBackgroundColor(Color.LTGRAY);
                 setSystemProperty("sdcard_test",  "1");
-             /*   new Thread(new Runnable() {
-                    @Override
-                    public void run() {
-                        try {
-                            Thread.sleep(1000);  // 延迟1秒
-                            // 执行您的操作
-                            setSystemProperty("sdcard_test",  "1");
-                        } catch (InterruptedException e) {
-                            e.printStackTrace();
-                        }
-                    }
-                }).start();
-
-              */
                 // 添加延迟
                 handler.postDelayed(new Runnable() {
                     @Override
@@ -262,6 +244,11 @@ public class MainActivity extends AppCompatActivity {
                     @Override
                     public void run() {
                         // 检查存储状态
+                        Boolean sderrflag = Boolean.parseBoolean(getSystemProperty("rp.sdcard.rw.err"));
+                        if(sderrflag)
+                        {
+                            sdTestButton.setBackgroundColor(Color.RED);
+                        }
                         String executionCount = getSystemProperty("rp.sdcard.rw.count");
                         Log.d(TAG, "脚本执行次数：" + executionCount);
                         sdCheckView.setText("测试次数: " + executionCount);
@@ -295,21 +282,8 @@ public class MainActivity extends AppCompatActivity {
 
             public void onClick(View v) {
                 UsbTestButton.setEnabled(false);
+                UsbTestButton.setBackgroundColor(Color.LTGRAY);
                 setSystemProperty("udisk_test",  "1");
-           /*     new Thread(new Runnable() {
-                    @Override
-                    public void run() {
-                        try {
-                            Thread.sleep(2000);  // 延迟2秒
-                            // 执行您的操作
-                            setSystemProperty("udisk_test",  "1");
-                        } catch (InterruptedException e) {
-                            e.printStackTrace();
-                        }
-                    }
-                }).start();
-
-            */
                 // 添加延迟
                 handler.postDelayed(new Runnable() {
                     @Override
@@ -334,6 +308,11 @@ public class MainActivity extends AppCompatActivity {
                     @Override
                     public void run() {
                         // 检查存储状态
+                        Boolean uderrflag = Boolean.parseBoolean(getSystemProperty("rp.udisk.rw.err"));
+                        if(uderrflag)
+                        {
+                            UsbTestButton.setBackgroundColor(Color.RED);
+                        }
                         String executionCount = getSystemProperty("rp.udisk.rw.count");
                         Log.d(TAG, "脚本执行次数：" + executionCount);
                         udiskCheckView.setText("测试次数: " + executionCount);
@@ -365,22 +344,9 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 sataTestButton.setEnabled(false);
+                sataTestButton.setBackgroundColor(Color.LTGRAY);
                 setSystemProperty("sata_test",  "1");
 
-           /*     new Thread(new Runnable() {
-                    @Override
-                    public void run() {
-                        try {
-                            Thread.sleep(1000);  // 延迟1秒
-                            // 执行您的操作
-                            setSystemProperty("sata_test",  "1");
-                        } catch (InterruptedException e) {
-                            e.printStackTrace();
-                        }
-                    }
-                }).start();
-
-            */
 
 
                 // 添加延迟
@@ -403,6 +369,11 @@ public class MainActivity extends AppCompatActivity {
                             @Override
                             public void run() {
                                 // 检查存储状态
+                                Boolean sterrflag = Boolean.parseBoolean(getSystemProperty("rp.sata.rw.err"));
+                                if(sterrflag)
+                                {
+                                    sataTestButton.setBackgroundColor(Color.RED);
+                                }
                                 String executionCount = getSystemProperty("rp.sata.rw.count");
                                 Log.d(TAG, "脚本执行次数：" + executionCount);
                                 sataCheckView.setText("测试次数: " + executionCount);
@@ -434,21 +405,8 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 M2TestButton.setEnabled(false);
+                M2TestButton.setBackgroundColor(Color.LTGRAY);
                 setSystemProperty("m2_test",  "1");
-                /*new Thread(new Runnable() {
-                    @Override
-                    public void run() {
-                        try {
-                            Thread.sleep(1000);  // 延迟1秒
-                            // 执行您的操作
-                            setSystemProperty("m2_test",  "1");
-                        } catch (InterruptedException e) {
-                            e.printStackTrace();
-                        }
-                    }
-                }).start();
-
-                 */
                 handler.postDelayed(new Runnable() {
                     @Override
                     public void run() {
@@ -467,6 +425,11 @@ public class MainActivity extends AppCompatActivity {
                     @Override
                     public void run() {
                         // 检查存储状态
+                        Boolean m2errflag = Boolean.parseBoolean(getSystemProperty("rp.m2.rw.err"));
+                        if(m2errflag)
+                        {
+                            M2TestButton.setBackgroundColor(Color.RED);
+                        }
                         String executionCount = getSystemProperty("rp.m2.rw.count");
                         Log.d(TAG, "脚本执行次数：" + executionCount);
                         m2CheckView.setText("测试次数: " + executionCount);
@@ -524,8 +487,6 @@ public class MainActivity extends AppCompatActivity {
 
             @Override
             public void onClick(View v) {
-               // seStartApp("com.cghs.stresstest", "com.cghs.stresstest.test.CameraTest");
-              //  seStartApp("com.cghs.stresstest" , "com.cghs.stresstest.StressTestActivity");
                 startAppWithShellCommand("com.cghs.stresstest" , "com.cghs.stresstest.test.CameraTest");
 
             }
@@ -559,16 +520,23 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onReceive(Context context, Intent intent) {
                 int wifiStateExtra = intent.getIntExtra(WifiManager.EXTRA_WIFI_STATE, WifiManager.WIFI_STATE_UNKNOWN);
-
-                switch (wifiStateExtra) {
-                    case WifiManager.WIFI_STATE_ENABLED:
-                        wifiEnabledCount++;
-                        wifiCountTextView.setText("WiFi打开成功的次数: " + wifiEnabledCount);
-                        break;
-                    case WifiManager.WIFI_STATE_DISABLED:
-                        // WiFi已关闭
-                        break;
-                }
+               if(!wifiButton.isEnabled()) {
+                   switch (wifiStateExtra) {
+                       case WifiManager.WIFI_STATE_ENABLED:
+                           wifiEnabledCount++;
+                           wifiCountTextView.setText("WiFi打开成功的次数: " + wifiEnabledCount);
+                           break;
+                       case WifiManager.WIFI_STATE_DISABLED:
+                           // WiFi已关闭
+                           break;
+                       case WifiManager.WIFI_STATE_UNKNOWN:
+                           // WiFi启动失败，将按钮颜色设置为红色
+                           wifiButton.setBackgroundColor(Color.RED);
+                           break;
+                       default:
+                           break;
+                   }
+               }
             }
         };
 
@@ -581,15 +549,23 @@ public class MainActivity extends AppCompatActivity {
 
                 if (action.equals(BluetoothAdapter.ACTION_STATE_CHANGED)) {
                     final int state = intent.getIntExtra(BluetoothAdapter.EXTRA_STATE, BluetoothAdapter.ERROR);
-                    switch (state) {
-                        case BluetoothAdapter.STATE_ON:
-                            bluetoothEnabledCount++;
-                            bluetoothCountTextView.setText("蓝牙打开成功的次数: " + bluetoothEnabledCount);
-                            break;
-                        case BluetoothAdapter.STATE_OFF:
-                            // 蓝牙已关闭
-                            break;
-                    }
+                    if (!bluetoothButton.isEnabled())
+                    {
+                        switch (state) {
+                            case BluetoothAdapter.STATE_ON:
+                                bluetoothEnabledCount++;
+                                bluetoothCountTextView.setText("蓝牙打开成功的次数: " + bluetoothEnabledCount);
+                                break;
+                            case BluetoothAdapter.STATE_OFF:
+                                // 蓝牙已关闭
+                                break;
+                            case BluetoothAdapter.ERROR:
+                                bluetoothButton.setBackgroundColor(Color.RED);
+                                break;
+                            default:
+                                break;
+                        }
+                }
                 }
             }
         };
@@ -602,52 +578,8 @@ public class MainActivity extends AppCompatActivity {
         wifiStatusButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-               // wifiStatusButton.setEnabled(false);
                 Intent intent = new Intent(MainActivity.this, WifiTestActivity.class);
                 startActivity(intent);
-             /*  if (!isRunning) {
-                    isRunning = true;
-
-                    // 获取IP地址并开始计时
-                  //  final String ip = NetworkUtils.getNetWorkIp();
-                 final    String ip = NetworkUtils.getNetWorkIp("wlan0");
-                    final long startTime = System.currentTimeMillis();
-
-                    runnable = new Runnable() {
-                        @Override
-                        public void run() {
-                            if (!isRunning) {
-                                return;
-                            }
-
-                            new Thread(new Runnable() {
-                                @Override
-                                public void run() {
-                                    //final String ip = NetworkUtils.getNetWorkIp();
-                                    final    String ip = NetworkUtils.getNetWorkIp("wlan0");
-                                    final String pingResult = NetworkUtils.ping("www.qq.com");
-
-                                    // 在主线程中更新TextView
-                                    runOnUiThread(new Runnable() {
-                                        @Override
-                                        public void run() {
-                                            long currentTime = System.currentTimeMillis();
-                                            long duration = currentTime - startTime;
-                                            double durationInSeconds = duration / 1000.0;
-                                            networkStatusTextView.setText("IP: " + ip + "\nPing result: " + pingResult + "\nDuration: " + durationInSeconds + " s");
-                                        }
-                                    });
-                                }
-                            }).start();
-
-                            // 每秒执行一次
-                            handler.postDelayed(this, 1000);
-                        }
-                    };
-
-
-                    handler.post(runnable);
-                } */
             }
         });
 
@@ -658,38 +590,6 @@ public class MainActivity extends AppCompatActivity {
                 Intent intent = new Intent(MainActivity.this, NetworkTestActivity.class);
                 startActivity(intent);
             }
-
-         /*  public void onClick(View v) {
-                ethButton.setEnabled(false);
-                final long startTime = System.currentTimeMillis();
-             //   String ip = NetworkUtils.getNetWorkIp(); // 修改这里
-               final String ipEth0 = NetworkUtils.getNetWorkIp("eth0");
-               final String ipEth1 = NetworkUtils.getNetWorkIp("eth1");
-                if (ipEth0 != null || ipEth1 != null) {
-                    networkStatusTextView.setText("Current IPs: " + ipEth0 + ", " + ipEth1);
-
-                    new Thread(new Runnable() {
-                        @Override
-                        public void run() {
-                           // String pingResult = NetworkUtils.ping("www.qq.com");
-                            String pingResultEth0 = NetworkUtils.ping("www.qq.com");
-                            String pingResultEth1 = NetworkUtils.ping("www.qq.com");
-                            long duration = System.currentTimeMillis() - startTime;
-                            runOnUiThread(new Runnable() {
-                                @Override
-                                public void run() {
-                                   // networkStatusTextView.append("\nPing result:\n" + pingResult);
-                                    networkStatusTextView.append("\nPing result for eth0:\n" + pingResultEth0);
-                                    networkStatusTextView.append("\nPing result for eth1:\n" + pingResultEth1);
-                                    networkStatusTextView.append("\nDuration: " + duration + " ms");
-                                }
-                            });
-                        }
-                    }).start();
-                } else {
-                    networkStatusTextView.setText("IP not found");
-                }
-            } */
         });
 
 
@@ -721,21 +621,44 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
+      /*   if((!wifiButton.isEnabled()) || (!bluetoothButton.isEnabled()) || (!sdTestButton.isEnabled()) || (!sataTestButton.isEnabled()) || (!UsbTestButton.isEnabled()) || (!M2TestButton.isEnabled()))
+        {
+            timeDisplay = new TimeDisplay(getTimeTextView);
+            timeDisplay.start();
+        } */
 
+        Button startTime = findViewById(R.id.start_time_button);
+        timeDisplay = new TimeDisplay(getTimeTextView);
+        startTime.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                startTime.setEnabled(false);
+                timeDisplay.start();
+
+            }
+        });
 
         Button stopButton = findViewById(R.id.stop_button);
+
         stopButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 wifiButton.setEnabled(true);
+                wifiButton.setBackgroundColor(Color.BLUE);
                 bluetoothButton.setEnabled(true);
+                bluetoothButton.setBackgroundColor(Color.BLUE );
                 sdTestButton.setEnabled(true);
+                sdTestButton.setBackgroundColor(Color.BLUE);
                 sataTestButton.setEnabled(true);
+                sataTestButton.setBackgroundColor(Color.BLUE);
                 UsbTestButton.setEnabled(true);
+                UsbTestButton.setBackgroundColor(Color.BLUE);
                 M2TestButton.setEnabled(true);
+                M2TestButton.setBackgroundColor(Color.BLUE);
                 wifiStatusButton.setEnabled(true);
                 ethButton.setEnabled(true);
-
+                startTime.setEnabled(true);
+                timeDisplay.stop();
 
                 if (checkStorageTask != null) {
                     // 移除消息队列中所有的checkStorageTask任务
@@ -771,10 +694,6 @@ public class MainActivity extends AppCompatActivity {
                 setSystemProperty("rp.m2.rw.count" , "0");
             }
         });
-
-
-
-
 
     }
 
@@ -944,11 +863,6 @@ public class MainActivity extends AppCompatActivity {
         return false;
     }
 
-
-
-
-
-
     public void startAppWithShellCommand(String packageName, String activityName) {
         Process processa = null;
         DataOutputStream os = null;
@@ -975,27 +889,7 @@ public class MainActivity extends AppCompatActivity {
             }
         }
     }
-/*
-    @Override
-    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
-        switch (requestCode) {
-            case MY_PERMISSIONS_REQUEST: {
-                if (grantResults.length > 0
-                        && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                    // Permission was granted
-                    // You can use the location information here
-                } else {
-                    // Permission denied
-                    // Disable the functionality that depends on this permission
-                }
-                return;
-            }
 
-            // Other 'case' lines to check for other permissions this app might request
-        }
-    }
-
- */
 private void initPermission() {
     List<String> mPermissionList = new ArrayList<>();
     // Android 版本大于等于 12 时，申请新的蓝牙权限
@@ -1015,7 +909,6 @@ private void initPermission() {
 
     ActivityCompat.requestPermissions(this, mPermissionList.toArray(new String[0]), REQUEST_PERMISSION_CODE);
 }
-
 
 
 }

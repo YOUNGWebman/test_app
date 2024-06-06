@@ -1,6 +1,9 @@
 package com.example.rpdzkj_test;
-import java.util.concurrent.CountDownLatch;
 
+import java.text.SimpleDateFormat;
+import java.util.Locale;
+import java.util.concurrent.CountDownLatch;
+import com.example.rpdzkj_test.TimeDisplay;
 
 import android.content.res.ColorStateList;
 import android.graphics.Color;
@@ -83,7 +86,11 @@ public class UartTestActivity extends AppCompatActivity {
     ArrayList<TextView> receiveTextViewList = null;
     ArrayList<TextView> countTextViewList = null;
     List<AtomicBoolean> shouldStops = null;
-    int successCount =0;
+   // int successCount =0;
+   int[] array = new int[10]; // Java中的数组默认初始化为0
+    private TimeDisplay timeDisplay;
+   // private  long startTime = 0;
+    private TextView getTimeTextView;
     ExecutorService executor = null;
 
 
@@ -225,7 +232,7 @@ public class UartTestActivity extends AppCompatActivity {
 
 public void doTest() {
         executor = Executors.newFixedThreadPool(10);
-        String str = "012345678";
+        String str = "0123";
         final String testString =  str + str;
         String uartSettings = "fffffff4:4:1cb2:a30:3:1c:7f:15:4:0:1:0:11:13:1a:0:12:f:17:16:0:0:0";
 
@@ -241,7 +248,7 @@ public void doTest() {
                     public void run() {
 
                         CmdResult result;
-                        String testFilePath0 =  "/data/" ;
+                        String testFilePath0 =  "/data/";
                         upgradeRootPermission(testFilePath0);
                         String testFilePath = testFilePath0 + uart.getName() + ".txt";
                         upgradeRootPermission(testFilePath);
@@ -256,32 +263,29 @@ public void doTest() {
                         runCmd(cmd0, 1);
                         runCmd(cmd1, 1);
                         runCmd(cmdW, 1);
-                        try {
-                            Thread.sleep(100);  // 延迟1秒
+                    /*    try {
+                            Thread.sleep(100);
                         } catch (InterruptedException e) {
                             e.printStackTrace();
-                        }
-
+                        } */
                         result = runCmd(cmdR, 1);
-
                         boolean isSuccess = testString.equals(result.output);
                         runCmd(cmdRM, 1);
                         runCmd(cmdClean, 1);
                         Log.d("RRRRRR result ", uart.getName() + " " + result.output);
-
-
-
                         runOnUiThread(() -> {
+
                            if (shouldStops.get(finalI).get()) {
                                // 测试已经失败，不再更新UI
                                return;
                            }
-                            if (isSuccess && !shouldStops.get(finalI).get()) {
+                            if (isSuccess ) {
                                 //if (!shouldStop.get()) {
-                                    successCount++;
+                                  //  successCount++;
+                                array[finalI]++;
                                     sendTextViewList.get(finalI).setText("发送内容：" + testString);
                                     receiveTextViewList.get(finalI).setText("接收内容：" + result.output);
-                                    countTextViewList.get(finalI).setText( "测试次数：" + successCount );
+                                    countTextViewList.get(finalI).setText( "测试次数：" + array[finalI] );
                                 //}
                             } else {
                                 // 测试失败，停止测试
@@ -318,6 +322,8 @@ public void doTest() {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_uart_test);
+
+        getTimeTextView = findViewById(R.id.uartTimeText);
         // 初始化checkBoxArrayList
         resultHandler = new Handler(Looper.getMainLooper()) {
             @Override
@@ -330,6 +336,7 @@ public void doTest() {
         };
         uartTestResultLayout = (GridLayout)findViewById(R.id.uartTestLayout);
         DisplayMetrics displayMetrics = getResources().getDisplayMetrics();
+        timeDisplay = new TimeDisplay(getTimeTextView);
         int screenWidth = displayMetrics.widthPixels;
         width = (screenWidth / col - 2 * margin);
         initTest();
@@ -338,6 +345,7 @@ public void doTest() {
             @Override
             public void onClick(View v) {
                 startButton.setEnabled(false);
+                timeDisplay.start();
                 // 创建一个新的ExecutorService
                 executor = Executors.newSingleThreadExecutor();
                 // 在新的线程中循环执行doTest()
@@ -356,6 +364,12 @@ public void doTest() {
                 });
             }
         });
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        timeDisplay.stop();
     }
 
     public static boolean upgradeRootPermission(String pkgCodePath) {
@@ -382,4 +396,7 @@ public void doTest() {
         }
         return true;
     }
+
+
+
 }

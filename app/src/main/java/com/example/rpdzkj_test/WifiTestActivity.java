@@ -78,7 +78,7 @@ public class WifiTestActivity extends AppCompatActivity {
         private long startTime;
         private AtomicBoolean shouldStop = new AtomicBoolean(false);
         private AtomicBoolean isRunning;
-        private double lastRecordedTime = 0;
+        private String lastRecord = "00:00:00";
         private Context context;
         private ConnectivityManager.NetworkCallback networkCallback;
         private Network currentNetwork;
@@ -102,7 +102,7 @@ public class WifiTestActivity extends AppCompatActivity {
                             handler.removeCallbacks(runnable);
                             shouldStop.set(true);
                             networkLost.set(true);
-                            networkStatusTextView.setText("测试失败" + "\nDuration:" + lastRecordedTime + " s");
+                            networkStatusTextView.setText("测试失败" + "\nDuration:" + lastRecord);
                             Log.d("NetworkTest", "Interface disconnected: " + interfaceName);
                         }
                     }
@@ -148,7 +148,7 @@ public class WifiTestActivity extends AppCompatActivity {
                                     runOnUiThread(new Runnable() {
                                         @Override
                                         public void run() {
-                                            networkStatusTextView.setText("测试失败" + "\nDuration:" + lastRecordedTime + " s");
+                                            networkStatusTextView.setText("测试失败" + "\nDuration:" + lastRecord);
                                         }
                                     });
 
@@ -172,7 +172,7 @@ public class WifiTestActivity extends AppCompatActivity {
                                         if(shouldStop.get() )
 
                                         {
-                                            networkStatusTextView.setText("测试失败1" + "\nDuration:" + lastRecordedTime + " s");
+                                            networkStatusTextView.setText("测试失败1" + "\nDuration:" + lastRecord);
                                             //  isStopped.set(true);
                                             shouldStop.set(true);
                                             isRunning.set(false);
@@ -181,8 +181,13 @@ public class WifiTestActivity extends AppCompatActivity {
                                         long currentTime = System.currentTimeMillis();
                                         long duration = currentTime - startTime;
                                         double durationInSeconds = duration / 1000.0;
-                                        lastRecordedTime = durationInSeconds;
-                                        networkStatusTextView.setText("IP: " + ip + "\nPing result: " + pingResult + "\nDuration: " + durationInSeconds + " s");
+                                        int hours = (int) (durationInSeconds / 3600);
+                                        int minutes = (int) ((durationInSeconds % 3600) / 60);
+                                        int seconds = (int) (durationInSeconds % 60);
+                                        String formattedDuration = String.format("%02d:%02d:%02d", hours, minutes, seconds);
+                                        lastRecord = formattedDuration;
+                                        networkStatusTextView.setText("IP: " + ip + "\nPing result: " + pingResult + "\nDuration: " + formattedDuration);
+
                                     }
                                 });
                             }

@@ -30,12 +30,22 @@
         android:padding="10dp"
         android:layout_below="@id/uartTestLayout" />
 
+    <TextView
+        android:id="@+id/uartTimeText"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textSize="20sp"
+        android:layout_below="@id/textViewLayout"
+        android:text="当前运行时间： 00:00:00"
+        android:layout_marginBottom="10dp" />
+
     <Button
         android:id="@+id/startButton"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_below="@id/textViewLayout"
+        android:layout_below="@id/uartTimeText"
         android:text="start" />
+
 
    <!-- <Button
         android:id="@+id/stopButton"

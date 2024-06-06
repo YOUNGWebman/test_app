@@ -1,8 +1,10 @@
 package com.example.rpdzkj_test;
 
+import com.example.rpdzkj_test.TimeDisplay;
 import java.io.File;
 
 
+import android.os.Handler;
 import android.view.View;
 
 import android.os.Bundle;
@@ -14,6 +16,8 @@ import android.widget.TextView;
 import java.io.*;
 
 import java.io.IOException;
+import java.text.SimpleDateFormat;
+import java.util.Locale;
 import java.util.concurrent.TimeUnit;
 
 
@@ -32,6 +36,9 @@ public class CanTestActivity extends AppCompatActivity {
     boolean can1_flag = false;
     int can2_count = 0;
     boolean can2_flag = false;
+    private TimeDisplay timeDisplay;
+    private  long startTime = 0;
+    private TextView getTimeTextView;
     String cmd0Touch = String.format("touch /data/can0.txt");
     String cmd01="ip link set can0 down";
     String cmd02="ip link set can0 type can bitrate 100000";
@@ -65,14 +72,17 @@ public class CanTestActivity extends AppCompatActivity {
     public void onCreate(Bundle paramBundle) {
         super.onCreate(paramBundle);
         setContentView(R.layout.activity_can_test);
+        getTimeTextView = findViewById(R.id.canTime);
         upgradeRootPermission("/data");
         String[] fileNames = {"can0.txt", "can1.txt", "can2.txt"};
        // FileManager.deleteAndCreateFiles(fileNames);
+        timeDisplay = new TimeDisplay(getTimeTextView);
 
         Button startCanButton = findViewById(R.id.start_can_test_button);
         startCanButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                timeDisplay.start();
                 String[] canFiles = {"/sys/class/net/can0", "/sys/class/net/can1", "/sys/class/net/can2"};
                 for (String canFile : canFiles) {
                     checkCanFile(canFile);
@@ -84,136 +94,6 @@ public class CanTestActivity extends AppCompatActivity {
 
 
 
-     /*  public void Can0Test() {
-           String testFilePath0 =  "/data/" ;
-           UpgradeRootPermission(testFilePath0);
-           File f0 = new File("/data/can0.txt");
-           if (can0_flag){
-               if (!f0.exists()) {
-                   runCmd(cmd0Touch, 1);
-               }
-               runCmd(cmd01, 1);
-               runCmd(cmd02, 1);
-               runCmd(cmd03, 1);
-               runCmd(cmd04, 1);
-               runCmd(cmd05, 1);
-               ((TextView) findViewById(R.id.can0Send)).setText("发送内容：" + "123#11111111");
-           runOnUiThread(() -> {
-               if (f0.length() > 0) {
-                   can0_count++;
-                   System.out.println("java.txt文件大小为: " + f0.length());
-                   runCmd(cmd0RM, 1);
-                   ((TextView) findViewById(R.id.can0Recive)).setText("接收内容：" + "123#11111111");
-                   ((TextView) findViewById(R.id.can0String)).setText("测试次数" + can0_count);
-                   final_flag[0] = 0;
-                   canOK++;
-               } else {
-                   System.out.println("can0测试失败");
-                   ((TextView) findViewById(R.id.can0Send)).setText("测试失败");
-                   ((TextView) findViewById(R.id.can0Recive)).setText("测试失败");
-                   can0_flag = false;
-               }
-           });
-       }
-
-       } */
-
-
- /*   public boolean Can1Test() {
-        Process process = null;
-        DataOutputStream os = null;
-
-        try {
-            process = Runtime.getRuntime().exec("su"); //切换到root帐号
-            os = new DataOutputStream(process.getOutputStream());
-
-                System.out.println("can1测试");
-                CmdResult1 result1;
-                os.writeBytes(cmd11 + "\n");
-                os.writeBytes(cmd12 + "\n");
-                os.writeBytes(cmd13 + "\n");
-                os.writeBytes(cmd14 + "\n");
-                os.writeBytes(cmd15 + "\n");
-                os.writeBytes(cmd15 + "\n");
-                os.writeBytes("exit\n");
-                os.flush();
-                process.waitFor();
-            ((TextView) findViewById(R.id.can1Send)).setText("发送内容：" + "123#11111111");
-        } catch (Exception e) {
-            return false;
-        } finally {
-            try {
-                if (os != null) {
-                    os.close();
-                }
-                process.destroy();
-            } catch (Exception e) {
-            }
-        }
-
-            File f1= new File("/data/can1.txt");
-            if (f1.exists() && f1.length()>0){
-                System.out.println("java.txt文件大小为: " + f1.length());
-                ((TextView) findViewById(R.id.can1String)).setText("CAN1测试成功" + f1.length());
-                final_flag[1] = 0;
-                canOK++;
-            }
-            else {
-                ((TextView) findViewById(R.id.can1String)).setText("CAN1测试失败");
-            }
-
-
-        return true;
-    }
-    public boolean Can2Test() {
-        Process process = null;
-        DataOutputStream os = null;
-
-        try {
-            process = Runtime.getRuntime().exec("su"); //切换到root帐号
-            os = new DataOutputStream(process.getOutputStream());
-                CmdResult1 result2;
-                System.out.println("can2测试");
-                os.writeBytes(cmd21 + "\n");
-                os.writeBytes(cmd22 + "\n");
-                os.writeBytes(cmd23 + "\n");
-                os.writeBytes(cmd24 + "\n");
-                os.writeBytes(cmd25 + "\n");
-                os.writeBytes(cmd25 + "\n");
-                os.writeBytes("exit\n");
-                os.flush();
-                process.waitFor();
-
-              ((TextView) findViewById(R.id.can2Send)).setText("发送内容：" + "123#11111111");
-        } catch (Exception e) {
-            return false;
-        } finally {
-            try {
-                if (os != null) {
-                    os.close();
-                }
-                process.destroy();
-            } catch (Exception e) {
-            }
-        }
-            File f2= new File("/data/can2.txt");
-            if (f2.exists() && f2.length()>0){
-                System.out.println("java.txt文件大小为: " + f2.length());
-                ((TextView) findViewById(R.id.can2String)).setText("CAN2测试成功" + f2.length());
-                final_flag[2] = 0;
-                canOK++;
-            }
-            else {
-                ((TextView) findViewById(R.id.can2String)).setText("CAN2测试失败");
-            }
-
-
-
-        return true;
-    } */
-
-
-
 
     @Override
     protected void onResume() {
@@ -221,39 +101,6 @@ public class CanTestActivity extends AppCompatActivity {
     }
 
 
-
-   /* public static class FileManager {
-
-        public static void deleteAndCreateFiles(String[] fileNames) {
-            for (String fileName : fileNames) {
-                UpgradeRootPermission("/data/");
-               // UpgradeRootPermission("/storage/");
-                File file = new File("/data/", fileName);
-
-                // 删除文件
-                if (file.exists()) {
-                    boolean deleted = file.delete();
-                    if (deleted) {
-                        System.out.println(fileName + " 文件已被删除");
-                    } else {
-                        System.out.println(fileName + " 文件删除失败");
-                    }
-                }
-
-                // 创建文件
-                try {
-                    boolean created = file.createNewFile();
-                    if (created) {
-                        System.out.println(fileName + " 文件已被创建");
-                    } else {
-                        System.out.println(fileName + " 文件创建失败");
-                    }
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-        }
-    } */
 
 
     public class CmdResult1 {
@@ -558,5 +405,6 @@ public class CanTestActivity extends AppCompatActivity {
         }
         return true;
     }
+
 
 }

@@ -1,8 +1,11 @@
 package com.example.rpdzkj_test;
 
+import com.example.rpdzkj_test.TimeDisplay;
 import java.io.File;
 import android.content.res.ColorStateList;
 import android.graphics.Color;
+
+
 
 import android.view.View;
 import android.app.Activity;
@@ -26,6 +29,8 @@ import android.os.Process;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.text.SimpleDateFormat;
+import java.util.Locale;
 import java.util.concurrent.*;
 import android.os.Handler;
 import android.os.Looper;
@@ -80,14 +85,16 @@ public class SpiTestActivity extends AppCompatActivity {
     private int  successCount = 0;
 
     private SpiTest spitest0, spitest1, spitest2;
-
+    private TimeDisplay timeDisplay;
+    private  long startTime = 0;
+    private TextView getTimeTextView;
 
 
 
     public void onCreate(Bundle paramBundle) {
         super.onCreate(paramBundle);
         setContentView(R.layout.activity_spi_test);
-
+        getTimeTextView = findViewById(R.id.spiTime);
 
         File f00= new File("/sys/class/spidev/spidev0.0");
         if (f00.exists()){
@@ -128,12 +135,13 @@ public class SpiTestActivity extends AppCompatActivity {
         spitest1 = new SpiTest();
         spitest2 = new SpiTest();
 
+        timeDisplay = new TimeDisplay(getTimeTextView);
 
         Button startButton = findViewById(R.id.start_spi_test_button);
             startButton.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-
+                      timeDisplay.start();
                     if(f00.exists()){
                         String cmd = "sc16is752 -d " + "/dev/spidev0.0" + " -s " + tx + tx;
                        // mTextViewSendContent.setText(cmd);
@@ -172,6 +180,12 @@ public class SpiTestActivity extends AppCompatActivity {
             });
 
         }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        timeDisplay.stop();
+    }
 
     public class SpiTest {
         private AtomicBoolean flag = new AtomicBoolean(true);
@@ -266,13 +280,11 @@ public class SpiTestActivity extends AppCompatActivity {
     }
 
 
-
-
-
     @Override
     protected void onResume() {
         super.onResume();
     }
+
 
 
 

@@ -98,6 +98,7 @@ public class NetworkTestActivity extends AppCompatActivity {
         private AtomicBoolean shouldStop = new AtomicBoolean(false);
         private AtomicBoolean isRunning;
         private double lastRecordedTime = 0;
+        private String lastRecord = "00:00:00";
         private Context context;
         private ConnectivityManager.NetworkCallback networkCallback;
         private Network currentNetwork;
@@ -144,7 +145,7 @@ public class NetworkTestActivity extends AppCompatActivity {
                             shouldStop.set(true);
                             networkLost.set(true);
                           //  isStopped.set(true);
-                            networkStatusTextView.setText("测试失败" + "\nDuration:" + lastRecordedTime + " s");
+                            networkStatusTextView.setText("测试失败" + "\nDuration:" + lastRecord);
                             Log.d("NetworkTest", "Interface disconnected: " + interfaceName);
                         }
                     }
@@ -186,7 +187,7 @@ public class NetworkTestActivity extends AppCompatActivity {
                            //     if (!NetworkUtils.isInterfaceConnected(interfaceName, context))
                                     if (NetworkUtils.getNetWorkIp(interfaceName) == null)
                                 {
-                                    networkStatusTextView.setText("测试失败" + "\nDuration:" + lastRecordedTime + " s");
+                                    networkStatusTextView.setText("测试失败" + "\nDuration:" + lastRecord);
                                     isRunning.set(false);
                                     Log.d("NetworkTestIP", "Interface " + interfaceName + " is not connected");
                                     return;
@@ -207,7 +208,7 @@ public class NetworkTestActivity extends AppCompatActivity {
                                             if(shouldStop.get() )
 
                                         {
-                                            networkStatusTextView.setText("测试失败1" + "\nDuration:" + lastRecordedTime + " s");
+                                            networkStatusTextView.setText("测试失败1" + "\nDuration:" + lastRecord);
                                           //  isStopped.set(true);
                                             shouldStop.set(true);
                                             isRunning.set(false);
@@ -216,8 +217,12 @@ public class NetworkTestActivity extends AppCompatActivity {
                                         long currentTime = System.currentTimeMillis();
                                         long duration = currentTime - startTime;
                                         double durationInSeconds = duration / 1000.0;
-                                        lastRecordedTime = durationInSeconds;
-                                        networkStatusTextView.setText("IP: " + ip + "\nPing result: " + pingResult + "\nDuration: " + durationInSeconds + " s");
+                                        int hours = (int) (durationInSeconds / 3600);
+                                        int minutes = (int) ((durationInSeconds % 3600) / 60);
+                                        int seconds = (int) (durationInSeconds % 60);
+                                        String formattedDuration = String.format("%02d:%02d:%02d", hours, minutes, seconds);
+                                        lastRecord = formattedDuration;
+                                        networkStatusTextView.setText("IP: " + ip + "\nPing result: " + pingResult + "\nDuration: " + formattedDuration);
                                     }
                                 });
                             }
