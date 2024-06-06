@@ -18,6 +18,7 @@ setprop rp.m2.storage.flag false
 setprop rp.m2.storage.total 0
 setprop rp.m2.storage.used 0
 setprop rp.m2.rw.count no_m2
+setprop rp.m2.rw.err false 
 
 
 
@@ -127,7 +128,7 @@ function write_read_file()
 		                if [ -f "$FILE" ];then
 		                	dd if=/$OUT_PATH/rp_stress_path/file${loop} of=/dev/zero
 		                else
-		                	setprop rp.m2.rw.count failed
+		                	setprop rp.m2.rw.err true
 		                	echo "failed" > /dev/tty
 		                	exit 11
 		                fi

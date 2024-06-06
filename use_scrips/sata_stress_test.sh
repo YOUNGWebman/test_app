@@ -15,6 +15,7 @@ count=$(getprop my.script.execution.count)
 
 setprop rp.sata.storage.flag false
 setprop rp.sata.rw.count no_sata
+setprop rp.sata.rw.err false 
 setprop rp.sata.storage.total 0
 setprop rp.sata.storage.used 0
 
@@ -135,7 +136,7 @@ function write_read_file()
 		                if [ -f "$FILE" ];then
 		                	dd if=/$OUT_PATH/rp_stress_path/file${loop} of=/dev/zero
 		                else
-		                	setprop rp.sata.rw.count failed
+		                	setprop rp.sata.rw.err true
 		                	echo "failed" > /dev/tty
 		                	exit 11
 		                fi

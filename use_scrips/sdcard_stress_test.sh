@@ -15,6 +15,7 @@ setprop rp.sdcard.storage.flag false
 setprop rp.sdcard.storage.total 0
 setprop rp.sdcard.storage.used 0
 setprop rp.sdcard.rw.count 0
+setprop rp.sdcard.rw.err false 
 
 count=$(getprop my.script.execution.count)
 
@@ -135,7 +136,7 @@ function write_read_file()
 		                if [ -f "$FILE" ];then
 		                	dd if=/$OUT_PATH/rp_stress_path/file${loop} of=/dev/zero
 		                else
-		                	setprop rp.sdcard.rw.count failed
+		                	setprop rp.sdcard.rw.err true
 		                	echo "failed" > /dev/tty
 		                	exit 1111
 		                fi

@@ -66,6 +66,7 @@ setprop rp.udisk.storage.flag false
 setprop rp.udisk.storage.total 0
 setprop rp.udisk.storage.used 0
 setprop rp.udisk.rw.count no_udisk
+setprop rp.udisk.rw.err false 
 
 
 
@@ -164,7 +165,7 @@ function write_read_file()
 		                if [ -f "$FILE" ];then
 		                	dd if=/$OUT_PATH/rp_stress_path/file${loop} of=/dev/zero
 		                else
-		                	setprop rp.udisk.rw.count failed
+		                	setprop rp.udisk.rw.err true 
 		                	echo "failed" > /dev/tty
 		                	exit 11
 		                fi
