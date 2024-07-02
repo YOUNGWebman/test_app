@@ -5,8 +5,7 @@ import java.util.Locale;
 import java.util.concurrent.CountDownLatch;
 import com.example.rpdzkj_test.TimeDisplay;
 
-import android.content.res.ColorStateList;
-import android.graphics.Color;
+
 import android.os.Bundle;
 import java.lang.Thread;
 import android.os.Handler;
@@ -29,48 +28,18 @@ import java.util.Arrays;
 import java.io.BufferedReader;
 import java.io.DataOutputStream;
 import java.io.InputStreamReader;
-import java.io.InputStream;
 
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
-
-import android.util.TypedValue;
 
 import android.widget.CheckBox;
-import android.widget.LinearLayout;
-import android.widget.TextView;
 
-import java.io.BufferedReader;
-import java.io.DataOutputStream;
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.util.ArrayList;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import android.view.View;
-import android.graphics.drawable.Drawable;
-import androidx.core.graphics.drawable.DrawableCompat;
 import android.view.LayoutInflater;
-import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.HashMap;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.List;
-import java.util.ArrayList;
-import java.util.concurrent.Future;
-import java.util.concurrent.ExecutionException;
-
-
-
-
-
-
-
 
 import androidx.appcompat.app.AppCompatActivity;
 
@@ -254,7 +223,7 @@ public void doTest() {
                         upgradeRootPermission(testFilePath);
                         String cmdTouch = String.format("touch %s \n", testFilePath);
                         String cmd0 = String.format("stty -F %s %s \n", uart.getAbsolutePath(), uartSettings);
-                        String cmd1 = String.format("cat %s > %s & \n", uart.getAbsolutePath(), testFilePath);
+                        String cmd1 = String.format("cat %s > %s  &\n", uart.getAbsolutePath(), testFilePath);
                         String cmdW = String.format("echo \"%s\" > %s  \n", testString, uart.getAbsolutePath());
                         String cmdR = String.format("cat %s \n", testFilePath);
                         String cmdRM = String.format("rm %s \n", testFilePath);
@@ -262,12 +231,19 @@ public void doTest() {
                         runCmd(cmdTouch, 1);
                         runCmd(cmd0, 1);
                         runCmd(cmd1, 1);
-                        runCmd(cmdW, 1);
-                    /*    try {
-                            Thread.sleep(100);
+                        try {
+                            Thread.sleep(300);
                         } catch (InterruptedException e) {
                             e.printStackTrace();
-                        } */
+                        }
+                        runCmd(cmdW, 1);
+
+                        try {
+                            Thread.sleep(300);
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
+
                         result = runCmd(cmdR, 1);
                         boolean isSuccess = testString.equals(result.output);
                         runCmd(cmdRM, 1);
@@ -369,8 +345,18 @@ public void doTest() {
     @Override
     protected void onDestroy() {
         super.onDestroy();
+        terminateAllCatProcesses();
         timeDisplay.stop();
     }
+    public void terminateAllCatProcesses() {
+        try {
+            Runtime.getRuntime().exec("killall cat");
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+
 
     public static boolean upgradeRootPermission(String pkgCodePath) {
         Process process = null;
@@ -396,7 +382,4 @@ public void doTest() {
         }
         return true;
     }
-
-
-
 }

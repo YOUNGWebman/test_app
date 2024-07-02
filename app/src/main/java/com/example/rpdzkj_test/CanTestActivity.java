@@ -36,6 +36,10 @@ public class CanTestActivity extends AppCompatActivity {
     boolean can1_flag = false;
     int can2_count = 0;
     boolean can2_flag = false;
+    int can4_count = 0;
+    boolean can4_flag = false;
+    int can5_count = 0;
+    boolean can5_flag = false;
     private TimeDisplay timeDisplay;
     private  long startTime = 0;
     private TextView getTimeTextView;
@@ -66,6 +70,24 @@ public class CanTestActivity extends AppCompatActivity {
     String cmd25="cansend can2 123#11111111";
     String cmd2RM = String.format("rm /data/can2.txt");
 
+    String cmd4Touch = String.format("touch /data/awlink0.txt");
+    String cmd41="ip link set awlink0 down";
+    String cmd42="ip link set awlink0 type can bitrate 100000";
+    String cmd43="ip link set awlink0 up";
+    String cmd424="candump awlink0 &";
+    String cmd44="candump awlink0 > /data/awlink0.txt &";
+    String cmd45="cansend awlink0 123#11111111";
+    String cmd4RM = String.format("rm /data/awlink0.txt");
+
+    String cmd5Touch = String.format("touch /data/awlink1.txt");
+    String cmd51="ip link set awlink1 down";
+    String cmd52="ip link set awlink1 type can bitrate 100000";
+    String cmd53="ip link set awlink1 up";
+    String cmd524="candump awlink1 &";
+    String cmd54="candump awlink1 > /data/awlink1.txt &";
+    String cmd55="cansend awlink1 123#11111111";
+    String cmd5RM = String.format("rm /data/awlink1.txt");
+
 
 
 
@@ -83,7 +105,7 @@ public class CanTestActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 timeDisplay.start();
-                String[] canFiles = {"/sys/class/net/can0", "/sys/class/net/can1", "/sys/class/net/can2"};
+                String[] canFiles = {"/sys/class/net/can0", "/sys/class/net/can1", "/sys/class/net/can2","/sys/class/net/awlink0", "/sys/class/net/awlink1"};
                 for (String canFile : canFiles) {
                     checkCanFile(canFile);
                 }
@@ -376,8 +398,151 @@ public class CanTestActivity extends AppCompatActivity {
                     }
                 }).start();
             }
+            else if (filePath.endsWith("awlink0")) {
+                can4_flag = true;
+                new Thread(new Runnable() {
+                    @Override
+                    public void run() {
+                        // 在这里执行耗时的操作
+                        upgradeRootPermission("data");
+                        String can1Path = "/data/awlink0.txt";
+                        File f1 = new File(can1Path);
+
+                        while (can4_flag){
+                            if (!f1.exists()) {
+                                runCmd(cmd1Touch, 1);
+                            }
+                            upgradeRootPermission(can1Path);
+                            runCmd(cmd41, 1);
+                            runCmd(cmd42, 1);
+                            runCmd(cmd43, 1);
+                            runCmd(cmd44, 1);
+                            runCmd(cmd45, 1);
+
+
+                            try {
+                                Thread.sleep(2000);  // 延迟1秒
+                            } catch (InterruptedException e) {
+                                e.printStackTrace();
+                            }
+
+                            // 操作完成后，将结果传回主线程
+                            runOnUiThread(new Runnable() {
+                                @Override
+                                public void run() {
+                                    // 在这里更新UI
+                                    ((TextView) findViewById(R.id.can0Send)).setText("发送内容：" + "123#11111111");
+                                    if (f1.length() > 0) {
+                                        try {
+                                            BufferedReader br = new BufferedReader(new FileReader(f1));
+                                            StringBuilder sb = new StringBuilder();
+                                            String line;
+                                            while ((line = br.readLine()) != null) {
+                                                sb.append(line);
+                                                sb.append('\n');
+                                            }
+                                            br.close();
+                                            // 获取到TextView的引用
+                                            TextView textView = findViewById(R.id.can0Recive);
+                                            // 将读取到的文件内容设置到TextView上
+                                            textView.setText("接收内容：" + sb.toString());
+                                        } catch (IOException e) {
+                                            e.printStackTrace();
+                                        }
+                                        can4_count++;
+                                        System.out.println("java.txt文件大小为: " + f1.length());
+                                        runCmd(cmd4RM, 1);
+                                        // ((TextView) findViewById(R.id.can1Recive)).setText("接收内容：" + "123#rpdzkj");
+                                        ((TextView) findViewById(R.id.can0String)).setText("测试次数" + can4_count);
+                                        final_flag[1] = 0;
+                                        canOK++;
+                                    } else {
+                                        System.out.println("can1测试失败");
+                                        ((TextView) findViewById(R.id.can0Send)).setText("测试失败");
+                                        ((TextView) findViewById(R.id.can0Recive)).setText("测试失败");
+                                        can4_flag = false;
+                                    }
+                                }
+                            });
+                        }
+                    }
+                }).start();
+            }
+            else if (filePath.endsWith("awlink1")) {
+                can5_flag = true;
+                new Thread(new Runnable() {
+                    @Override
+                    public void run() {
+                        // 在这里执行耗时的操作
+                        upgradeRootPermission("data");
+                        String can1Path = "/data/awlink1.txt";
+                        File f1 = new File(can1Path);
+
+                        while (can5_flag){
+                            if (!f1.exists()) {
+                                runCmd(cmd5Touch, 1);
+                            }
+                            upgradeRootPermission(can1Path);
+                            runCmd(cmd51, 1);
+                            runCmd(cmd52, 1);
+                            runCmd(cmd53, 1);
+                            runCmd(cmd54, 1);
+                            runCmd(cmd55, 1);
+
+
+                            try {
+                                Thread.sleep(2000);  // 延迟1秒
+                            } catch (InterruptedException e) {
+                                e.printStackTrace();
+                            }
+
+                            // 操作完成后，将结果传回主线程
+                            runOnUiThread(new Runnable() {
+                                @Override
+                                public void run() {
+                                    // 在这里更新UI
+                                    ((TextView) findViewById(R.id.can1Send)).setText("发送内容：" + "123#11111111");
+                                    if (f1.length() > 0) {
+                                        try {
+                                            BufferedReader br = new BufferedReader(new FileReader(f1));
+                                            StringBuilder sb = new StringBuilder();
+                                            String line;
+                                            while ((line = br.readLine()) != null) {
+                                                sb.append(line);
+                                                sb.append('\n');
+                                            }
+                                            br.close();
+                                            // 获取到TextView的引用
+                                            TextView textView = findViewById(R.id.can1Recive);
+                                            // 将读取到的文件内容设置到TextView上
+                                            textView.setText("接收内容：" + sb.toString());
+                                        } catch (IOException e) {
+                                            e.printStackTrace();
+                                        }
+                                        can5_count++;
+                                        System.out.println("java.txt文件大小为: " + f1.length());
+                                        runCmd(cmd5RM, 1);
+                                        // ((TextView) findViewById(R.id.can1Recive)).setText("接收内容：" + "123#rpdzkj");
+                                        ((TextView) findViewById(R.id.can1String)).setText("测试次数" + can5_count);
+                                        final_flag[1] = 0;
+                                        canOK++;
+                                    } else {
+                                        System.out.println("can1测试失败");
+                                        ((TextView) findViewById(R.id.can1Send)).setText("测试失败");
+                                        ((TextView) findViewById(R.id.can1Recive)).setText("测试失败");
+                                        can5_flag = false;
+                                    }
+                                }
+                            });
+                        }
+                    }
+                }).start();
+            }
         }
     }
+
+
+
 
     public static boolean upgradeRootPermission(String pkgCodePath) {
         Process process = null;

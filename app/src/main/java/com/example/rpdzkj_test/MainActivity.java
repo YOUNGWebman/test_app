@@ -621,6 +621,15 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
+
+        Button cameraButton = findViewById(R.id.camera_display_button);
+        cameraButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent(MainActivity.this, CameraTestActivity.class);
+                startActivity(intent);
+            }
+        });
       /*   if((!wifiButton.isEnabled()) || (!bluetoothButton.isEnabled()) || (!sdTestButton.isEnabled()) || (!sataTestButton.isEnabled()) || (!UsbTestButton.isEnabled()) || (!M2TestButton.isEnabled()))
         {
             timeDisplay = new TimeDisplay(getTimeTextView);
@@ -899,6 +908,8 @@ private void initPermission() {
         mPermissionList.add(Manifest.permission.BLUETOOTH_CONNECT);
         mPermissionList.add(Manifest.permission.WRITE_EXTERNAL_STORAGE);
         mPermissionList.add(Manifest.permission.READ_EXTERNAL_STORAGE);
+        mPermissionList.add(Manifest.permission.RECORD_AUDIO);
+
         //根据实际需要申请定位权限
         mPermissionList.add(Manifest.permission.ACCESS_COARSE_LOCATION);
         mPermissionList.add(Manifest.permission.ACCESS_FINE_LOCATION);
