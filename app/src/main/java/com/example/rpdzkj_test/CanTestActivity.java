@@ -26,7 +26,7 @@ import java.util.concurrent.TimeUnit;
 import androidx.appcompat.app.AppCompatActivity;
 
 public class CanTestActivity extends AppCompatActivity {
-    int[] final_flag = {0,0,0};
+    int[] final_flag = {0,0,0,0,0};
     int canTotal = 0;
     int canOK = 0;
     int can0_count = 0;
@@ -262,10 +262,9 @@ public class CanTestActivity extends AppCompatActivity {
                     @Override
                     public void run() {
                         // 在这里执行耗时的操作
-                        upgradeRootPermission("data");
                         String can1Path = "/data/can1.txt";
                         File f1 = new File(can1Path);
-
+                        upgradeRootPermission("data");
                         while (can1_flag){
                             if (!f1.exists()) {
                                 runCmd(cmd1Touch, 1);
@@ -332,14 +331,14 @@ public class CanTestActivity extends AppCompatActivity {
                     @Override
                     public void run() {
                         // 在这里执行耗时的操作
-                        upgradeRootPermission("/data");
                         String can2Path = "/data/can2.txt";
                         File f2 = new File(can2Path);
-
+                        upgradeRootPermission("/data");
                         while (can2_flag){
                             if (!f2.exists()) {
                                 runCmd(cmd2Touch, 1);
                             }
+                            upgradeRootPermission(can2Path);
                             runCmd(cmd21, 1);
                             runCmd(cmd22, 1);
                             runCmd(cmd23, 1);
@@ -358,7 +357,7 @@ public class CanTestActivity extends AppCompatActivity {
                                 @Override
                                 public void run() {
                                     // 在这里更新UI
-                                    ((TextView) findViewById(R.id.can1Send)).setText("发送内容：" + "123#11111111");
+                                    ((TextView) findViewById(R.id.can2Send)).setText("发送内容：" + "123#11111111");
                                     if (f2.length() > 0) {
                                         try {
 
@@ -372,18 +371,18 @@ public class CanTestActivity extends AppCompatActivity {
                                             br.close();
 
                                             // 获取到TextView的引用
-                                            TextView textView = findViewById(R.id.can1Recive);
+                                            TextView textView = findViewById(R.id.can2Recive);
                                             // 将读取到的文件内容设置到TextView上
                                             textView.setText("接收内容：" + sb.toString());
                                         } catch (IOException e) {
                                             e.printStackTrace();
                                         }
 
-                                        can1_count++;
+                                        can2_count++;
                                         System.out.println("java.txt文件大小为: " + f2.length());
                                         runCmd(cmd2RM, 1);
                                         // ((TextView) findViewById(R.id.can1Recive)).setText("接收内容：" + "123#rpdzkj");
-                                        ((TextView) findViewById(R.id.can1String)).setText("测试次数" + can2_count);
+                                        ((TextView) findViewById(R.id.can2String)).setText("测试次数" + can2_count);
                                         final_flag[2] = 0;
                                         canOK++;
                                     } else {
@@ -454,7 +453,7 @@ public class CanTestActivity extends AppCompatActivity {
                                         runCmd(cmd4RM, 1);
                                         // ((TextView) findViewById(R.id.can1Recive)).setText("接收内容：" + "123#rpdzkj");
                                         ((TextView) findViewById(R.id.can0String)).setText("测试次数" + can4_count);
-                                        final_flag[1] = 0;
+                                        final_flag[3] = 0;
                                         canOK++;
                                     } else {
                                         System.out.println("can1测试失败");
@@ -524,7 +523,7 @@ public class CanTestActivity extends AppCompatActivity {
                                         runCmd(cmd5RM, 1);
                                         // ((TextView) findViewById(R.id.can1Recive)).setText("接收内容：" + "123#rpdzkj");
                                         ((TextView) findViewById(R.id.can1String)).setText("测试次数" + can5_count);
-                                        final_flag[1] = 0;
+                                        final_flag[4] = 0;
                                         canOK++;
                                     } else {
                                         System.out.println("can1测试失败");
