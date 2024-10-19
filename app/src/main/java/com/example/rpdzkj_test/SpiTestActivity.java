@@ -2,6 +2,8 @@ package com.example.rpdzkj_test;
 
 import com.example.rpdzkj_test.TimeDisplay;
 import java.io.File;
+
+import android.content.Intent;
 import android.content.res.ColorStateList;
 import android.graphics.Color;
 
@@ -70,7 +72,7 @@ public class SpiTestActivity extends AppCompatActivity {
     String targetDev;
     ProgressDialog progressDialog;
     private Handler mHandler = new Handler(Looper.getMainLooper());
-    private static final String SPI_DEVICE_PATH = "/dev/spidev0.0";
+    //private static final String SPI_DEVICE_PATH = "/dev/spidev0.0";
     private static final int TEST_COUNT = 100;
 
     private TextView mTextViewSendContent;
@@ -82,6 +84,9 @@ public class SpiTestActivity extends AppCompatActivity {
     private TextView mText2ViewSendContent;
     private TextView mText2ViewReceiveContent;
     private TextView mText2ViewTestCount;
+    private boolean timerEnabled;
+    private int timeInSeconds;
+
     private int  successCount = 0;
 
     private SpiTest spitest0, spitest1, spitest2;
@@ -95,6 +100,11 @@ public class SpiTestActivity extends AppCompatActivity {
         super.onCreate(paramBundle);
         setContentView(R.layout.activity_spi_test);
         getTimeTextView = findViewById(R.id.spiTime);
+        Button startButton = findViewById(R.id.start_spi_test_button);
+        Intent intent = getIntent();
+        timerEnabled = intent.getBooleanExtra("TIMER", false);
+        timeInSeconds = intent.getIntExtra("TIME_IN_SECONDS", 0);
+
 
         File f00= new File("/sys/class/spidev/spidev0.0");
         if (f00.exists()){
@@ -137,7 +147,7 @@ public class SpiTestActivity extends AppCompatActivity {
 
         timeDisplay = new TimeDisplay(getTimeTextView);
 
-        Button startButton = findViewById(R.id.start_spi_test_button);
+
             startButton.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
@@ -179,7 +189,37 @@ public class SpiTestActivity extends AppCompatActivity {
                 }
             });
 
+        if (timerEnabled) {
+            int timeInMillis = timeInSeconds * 1000;
+
+            startButton.performClick();
+            // 启动倒计时器，定时退出
+            new Handler().postDelayed(new Runnable() {
+                @Override
+                public void run() {
+
+                    Intent resultIntent = new Intent();
+                    resultIntent.putExtra("TIMER", true);
+                    resultIntent.putExtra("TIME_IN_SECONDS", timeInSeconds);
+
+                    setResult(RESULT_OK, resultIntent);
+                    finish();
+                }
+            }, timeInMillis);
         }
+
+        }
+
+    @Override
+    public boolean dispatchKeyEvent(KeyEvent event) {
+        if (event.getKeyCode() == KeyEvent.KEYCODE_BACK && event.getAction() == KeyEvent.ACTION_DOWN) {
+            Intent intent = new Intent(SpiTestActivity.this, MainActivity.class);
+            setResult(RESULT_OK, intent); // 返回结果
+            finish(); // 确保调用 finish() 方法
+            return true;
+        }
+        return super.dispatchKeyEvent(event);
+    }
 
     @Override
     protected void onDestroy() {

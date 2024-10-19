@@ -4,7 +4,9 @@ import com.example.rpdzkj_test.TimeDisplay;
 import java.io.File;
 
 
+import android.content.Intent;
 import android.os.Handler;
+import android.view.KeyEvent;
 import android.view.View;
 
 import android.os.Bundle;
@@ -88,6 +90,9 @@ public class CanTestActivity extends AppCompatActivity {
     String cmd55="cansend awlink1 123#11111111";
     String cmd5RM = String.format("rm /data/awlink1.txt");
 
+    private boolean timerEnabled;
+    private int timeInSeconds;
+
 
 
 
@@ -99,8 +104,13 @@ public class CanTestActivity extends AppCompatActivity {
         String[] fileNames = {"can0.txt", "can1.txt", "can2.txt"};
        // FileManager.deleteAndCreateFiles(fileNames);
         timeDisplay = new TimeDisplay(getTimeTextView);
+        Intent intent = getIntent();
+        timerEnabled = intent.getBooleanExtra("TIMER", false);
+        timeInSeconds = intent.getIntExtra("TIME_IN_SECONDS", 0);
 
         Button startCanButton = findViewById(R.id.start_can_test_button);
+
+
         startCanButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -112,6 +122,25 @@ public class CanTestActivity extends AppCompatActivity {
                 ((TextView) findViewById(R.id.canString)).setText(canTotal == 0 ? "检测CAN数为0,退出测试" : "当前CAN设备数量为： " + canTotal);
             }
         });
+
+        if (timerEnabled) {
+            int timeInMillis = timeInSeconds * 1000;
+
+            startCanButton.performClick();
+            // 启动倒计时器，定时退出
+            new Handler().postDelayed(new Runnable() {
+                @Override
+                public void run() {
+
+                    Intent resultIntent = new Intent();
+                    resultIntent.putExtra("TIMER", true);
+                    resultIntent.putExtra("TIME_IN_SECONDS", timeInSeconds);
+
+                    setResult(RESULT_OK, resultIntent);
+                    finish();
+                }
+            }, timeInMillis);
+        }
     }
 
 
@@ -541,7 +570,16 @@ public class CanTestActivity extends AppCompatActivity {
     }
 
 
-
+    @Override
+    public boolean dispatchKeyEvent(KeyEvent event) {
+        if (event.getKeyCode() == KeyEvent.KEYCODE_BACK && event.getAction() == KeyEvent.ACTION_DOWN) {
+            Intent intent = new Intent(CanTestActivity.this, MainActivity.class);
+            setResult(RESULT_OK, intent); // 返回结果
+            finish(); // 确保调用 finish() 方法
+            return true;
+        }
+        return super.dispatchKeyEvent(event);
+    }
 
     public static boolean upgradeRootPermission(String pkgCodePath) {
         Process process = null;

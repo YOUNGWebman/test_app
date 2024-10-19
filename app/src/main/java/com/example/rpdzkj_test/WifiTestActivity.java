@@ -7,6 +7,7 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.os.Handler;
 
+import android.view.KeyEvent;
 import android.widget.TextView;
 
 import androidx.appcompat.app.AppCompatActivity;
@@ -41,13 +42,37 @@ public class WifiTestActivity extends AppCompatActivity {
     private Runnable runnable;
     private Handler handler = new Handler();
     private NetworkTest networkTest;
+    private boolean timerEnabled;
+    private int timeInSeconds;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_wifi_test);
         networkStatusTextView = findViewById(R.id.wifi_network_status_text_view);
+        Intent intent = getIntent();
+        timerEnabled = intent.getBooleanExtra("TIMER", false);
+        timeInSeconds = intent.getIntExtra("TIME_IN_SECONDS", 0);
 
+
+        if (timerEnabled) {
+            int timeInMillis = timeInSeconds * 1000;
+
+            // 启动倒计时器，定时退出
+            new Handler().postDelayed(new Runnable() {
+                @Override
+                public void run() {
+
+                    Intent resultIntent = new Intent();
+                    resultIntent.putExtra("TIMER", true);
+                    resultIntent.putExtra("TIME_IN_SECONDS", timeInSeconds);
+
+                    setResult(RESULT_OK, resultIntent);
+
+                    finish();
+                }
+            }, timeInMillis);
+        }
         // 初始化isRunning
         AtomicBoolean isRunning0 = new AtomicBoolean(false);
 
@@ -203,6 +228,16 @@ public class WifiTestActivity extends AppCompatActivity {
         }
     }
 
+    @Override
+    public boolean dispatchKeyEvent(KeyEvent event) {
+        if (event.getKeyCode() == KeyEvent.KEYCODE_BACK && event.getAction() == KeyEvent.ACTION_DOWN) {
+            Intent intent = new Intent(WifiTestActivity.this, MainActivity.class);
+            setResult(RESULT_OK, intent); // 返回结果
+            finish(); // 确保调用 finish() 方法
+            return true;
+        }
+        return super.dispatchKeyEvent(event);
+    }
 
 
     public static class NetworkUtils {

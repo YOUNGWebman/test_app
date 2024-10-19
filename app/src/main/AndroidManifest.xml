@@ -80,6 +80,8 @@
                 android:value="" />
         </activity>
         <!-- Declare NetworkTestActivity here -->
+        <activity android:name=".WifiBtSwitchTestActivity" />
+        <activity android:name=".StorageTestActivity" />
         <activity android:name=".NetworkTestActivity" />
         <activity android:name=".WifiTestActivity" />
         <activity android:name=".UartTestActivity" />

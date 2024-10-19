@@ -9,6 +9,7 @@ import android.Manifest;
 import android.net.wifi.WifiManager;
 import android.os.Bundle;
 import android.os.Handler;
+import android.security.keystore.StrongBoxUnavailableException;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
@@ -19,9 +20,10 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.FileWriter;
+import android.os.CountDownTimer;
 import androidx.appcompat.app.AppCompatActivity;
-import android.os.Bundle;
 
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
@@ -36,7 +38,8 @@ import java.lang.reflect.Method;
 import java.util.Timer;
 import java.util.TimerTask;
 import android.graphics.Color;
-
+import android.widget.NumberPicker;
+import android.widget.Toast;
 
 
 
@@ -60,54 +63,35 @@ import java.util.concurrent.TimeUnit;
 
 
 
-
-
-
-
 public class MainActivity extends AppCompatActivity {
 
-    private WifiManager wifiManager;
-    private BluetoothAdapter bluetoothAdapter;
+
     private EditText editText;
     private Handler handler = new Handler();
     private static final String TAG = "MainActivity";
-
     private static final int PERMISSION_REQUEST_CODE = 100;
-    private static final int DELAY_MS = 2000;  // 延迟2秒
-    private Timer timer;
-    private boolean wifiEnabled = false;
-
-    private int wifiEnabledCount = 0;
-    private int bluetoothEnabledCount = 0;
-    private BroadcastReceiver wifiStateReceiver;
-    private BroadcastReceiver bluetoothStateReceiver;
-    private TextView wifiCountTextView;
-    private TextView bluetoothCountTextView;
-    private TextView sdStatusTextView;
-    private TextView UsbStatusTextView;
-    private TextView sataStatusTextView;
-    private TextView M2StatusTextView;
     private TextView getTimeTextView;
-
-    private TextView sdUsedSpaceTextView;
-    private TextView udiskUsedSpaceTextView;
-    private TextView sataUsedSpaceTextView;
-    private TextView m2UsedSpaceTextView;
-
+    private NumberPicker hoursPicker, minutesPicker, secondsPicker;
     private  Runnable runnable;
     public static boolean isRunning = false;
     private TimeDisplay timeDisplay;
-
-    private TextView sdCheckView;
-    private TextView udiskCheckView;
-    private TextView sataCheckView;
-    private TextView m2CheckView;
-    private Runnable checkStorageTask;
-    private long usedSpace = 0;
-    private long totalSpace = 0;
-    //private static final int MY_PERMISSIONS_REQUEST = 1;
     private final int REQUEST_PERMISSION_CODE = 1001;
-   // private long startTime = 0;
+
+    private Button StorageButton;
+    private Button wifiStatusButton;
+    private Button ethButton;
+    private Button uartButton;
+    private Button canButton;
+    private Button spiButton;
+
+
+    private static final int REQUEST_CODE_1 = 1;
+    private static final int REQUEST_CODE_2 = 2;
+    private static final int REQUEST_CODE_3 = 3;
+    private static final int REQUEST_CODE_4 = 4;
+    private static final int REQUEST_CODE_5 = 5;
+    private static final int REQUEST_CODE_6 = 6;
+    private static final int REQUEST_CODE_7 = 7;
 
 
     @Override
@@ -115,10 +99,6 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
          initPermission();
-
-
-
-
         // 尝试提升权限
         boolean success = upgradeRootPermission(getPackageCodePath());
         if (success) {
@@ -126,23 +106,30 @@ public class MainActivity extends AppCompatActivity {
         } else {
             Log.e(TAG, "Failed to upgrade root permission");
         }
-        wifiManager = (WifiManager) getSystemService(Context.WIFI_SERVICE);
-        bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
 
-       sdUsedSpaceTextView = findViewById(R.id.sd_used_space_text_view);
-        sataUsedSpaceTextView = findViewById(R.id.sata_used_space_text_view);
-        udiskUsedSpaceTextView = findViewById(R.id.udisk_used_space_text_view);
-        m2UsedSpaceTextView = findViewById(R.id.m2_used_space_text_view);
         getTimeTextView = findViewById(R.id.get_time_text_view);
 
-        sdCheckView = findViewById(R.id.sd_check_status_text_view);
-        udiskCheckView = findViewById(R.id.udisk_check_status_text_view);
-        sataCheckView = findViewById(R.id.sata_check_status_text_view);
-        m2CheckView = findViewById(R.id.m2_check_status_text_view);
-        sdStatusTextView = findViewById(R.id.sd_status_text_view);
-        sataStatusTextView = findViewById(R.id.sata_status_text_view);
-        UsbStatusTextView = findViewById(R.id.usb_status_text_view);
-        M2StatusTextView = findViewById(R.id.M2_status_text_view);
+        hoursPicker = findViewById(R.id.hours_picker);
+        minutesPicker = findViewById(R.id.minutes_picker);
+        secondsPicker = findViewById(R.id.seconds_picker);
+
+
+        // 设置 NumberPicker 的最小值和最大值
+        hoursPicker.setMinValue(0);
+        hoursPicker.setMaxValue(24);
+        minutesPicker.setMinValue(0);
+        minutesPicker.setMaxValue(59);
+        secondsPicker.setMinValue(0);
+        secondsPicker.setMaxValue(59);
+
+        // 设置格式化器，确保个位数前加上0
+        NumberPicker.Formatter formatter = value -> String.format("%02d", value);
+        hoursPicker.setFormatter(formatter);
+        minutesPicker.setFormatter(formatter);
+        secondsPicker.setFormatter(formatter);
+
+
+
         androidx.appcompat.app.ActionBar actionBar = getSupportActionBar();
 
 
@@ -176,288 +163,6 @@ public class MainActivity extends AppCompatActivity {
                     new String[]{android.Manifest.permission.WRITE_EXTERNAL_STORAGE},
                     PERMISSION_REQUEST_CODE);
         }
-
-        Button wifiButton = findViewById(R.id.wifi_button);
-        wifiButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                wifiButton.setBackgroundColor(Color.LTGRAY);
-               setProperty("wifi_test", "1");
-                wifiEnabledCount = 0;
-                wifiCountTextView.setText("WiFi打开成功的次数: " + wifiEnabledCount);
-                wifiButton.setEnabled(false);
-                wifiEnabled = !wifiEnabled;
-               // setProperty("wifi_test", wifiEnabled ? "1" : "0");
-            }
-        });
-
-        Button bluetoothButton = findViewById(R.id.bluetooth_button);
-        bluetoothButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                bluetoothButton.setBackgroundColor(Color.LTGRAY);
-                bluetoothEnabledCount = 0;
-                bluetoothCountTextView.setText("蓝牙打开成功的次数: " + bluetoothEnabledCount);
-                bluetoothButton.setEnabled(false);
-                if (bluetoothAdapter != null) {
-                    timer = new Timer();
-                    timer.schedule(new TimerTask() {
-                        @Override
-                        public void run() {
-                            if (bluetoothAdapter.isEnabled()) {
-                                // 关闭蓝牙
-                                bluetoothAdapter.disable();
-                            } else {
-                                // 开启蓝牙
-                                bluetoothAdapter.enable();
-                            }
-                        }
-                    }, 0, DELAY_MS);
-                }
-            }
-        });
-
-        Button sdTestButton = findViewById(R.id.sd_test_button);
-        sdTestButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                sdTestButton.setEnabled(false);
-                sdTestButton.setBackgroundColor(Color.LTGRAY);
-                setSystemProperty("sdcard_test",  "1");
-                // 添加延迟
-                handler.postDelayed(new Runnable() {
-                    @Override
-                    public void run() {
-                Boolean sdflag = Boolean.parseBoolean(getSystemProperty("rp.sdcard.storage.flag"));
-                if(sdflag)
-                {
-                    sdStatusTextView.setText("SD已挂载");
-
-                }else {
-                    sdStatusTextView.setText("SD未挂载或未格式化");
-                    setSystemProperty("sdcard_test",  "0");
-                    return;
-                }
-                handler.post(checkStorageTask);
-
-                checkStorageTask = new Runnable() {
-                    @Override
-                    public void run() {
-                        // 检查存储状态
-                        Boolean sderrflag = Boolean.parseBoolean(getSystemProperty("rp.sdcard.rw.err"));
-                        if(sderrflag)
-                        {
-                            sdTestButton.setBackgroundColor(Color.RED);
-                        }
-                        String executionCount = getSystemProperty("rp.sdcard.rw.count");
-                        Log.d(TAG, "脚本执行次数：" + executionCount);
-                        sdCheckView.setText("测试次数: " + executionCount);
-                        // 1秒后再次执行此任务
-                        handler.postDelayed(this, 1000);
-
-                        // 获取存储总容量和已使用容量
-                        String totalStorageStr = getSystemProperty("rp.sdcard.storage.total");
-                        String usedStorageStr = getSystemProperty("rp.sdcard.storage.used");
-
-                        // 将存储容量从字节转换为GB
-                        double totalStorage = Double.parseDouble(totalStorageStr) / 1000000;
-                        double usedStorage = Double.parseDouble(usedStorageStr) / 1000000;
-
-                        // 更新used1_space_text_view的文本
-                       // TextView used1SpaceTextView = findViewById(R.id.used_space_text_view);
-                        sdUsedSpaceTextView.setText("已使用容量: " + String.format("%.2f", usedStorage) + " GB\\总容量: " + String.format("%.2f", totalStorage) + " GB");
-                    }
-                };
-// 启动检查任务
-                handler.post(checkStorageTask);
-
-                    }
-                }, 500);  // 延迟1秒
-            }
-        });
-
-        Button UsbTestButton = findViewById(R.id.usb_test_button);
-        UsbTestButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-
-            public void onClick(View v) {
-                UsbTestButton.setEnabled(false);
-                UsbTestButton.setBackgroundColor(Color.LTGRAY);
-                setSystemProperty("udisk_test",  "1");
-                // 添加延迟
-                handler.postDelayed(new Runnable() {
-                    @Override
-                    public void run() {
-                        Boolean udiskflag = Boolean.parseBoolean(getSystemProperty("rp.udisk.storage.flag"));
-                        if(udiskflag)
-                        {
-                            UsbStatusTextView.setText("U盘已挂载");
-                        }else {
-                            UsbStatusTextView.setText("U盘未挂载或未格式化");
-                            setSystemProperty("udisk_test",  "0");
-                            return;
-                        }
-
-                        // 启动检查任务
-                        handler.post(checkStorageTask);
-                    }
-                }, 500);  // 延迟1秒
-
-                // 初始化checkStorageTask
-                checkStorageTask = new Runnable() {
-                    @Override
-                    public void run() {
-                        // 检查存储状态
-                        Boolean uderrflag = Boolean.parseBoolean(getSystemProperty("rp.udisk.rw.err"));
-                        if(uderrflag)
-                        {
-                            UsbTestButton.setBackgroundColor(Color.RED);
-                        }
-                        String executionCount = getSystemProperty("rp.udisk.rw.count");
-                        Log.d(TAG, "脚本执行次数：" + executionCount);
-                        udiskCheckView.setText("测试次数: " + executionCount);
-                        // 1秒后再次执行此任务
-                        handler.postDelayed(this, 1000);
-
-                        // 获取存储总容量和已使用容量
-                        String totalStorageStr = getSystemProperty("rp.udisk.storage.total");
-                        String usedStorageStr = getSystemProperty("rp.udisk.storage.used");
-
-                        // 将存储容量从字节转换为GB
-                        double totalStorage = Double.parseDouble(totalStorageStr) / 1000000;
-                        double usedStorage = Double.parseDouble(usedStorageStr) / 1000000;
-
-                        // 更新used1_space_text_view的文本
-                        //   TextView used1SpaceTextView = findViewById(R.id.used1_space_text_view);
-                        udiskUsedSpaceTextView.setText("已使用容量: " + String.format("%.2f", usedStorage) + " GB\\总容量: " + String.format("%.2f", totalStorage) + " GB");
-                    }
-                };
-
-
-            }
-        });
-
-
-
-        Button sataTestButton = findViewById(R.id.sata_test_button);
-        sataTestButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                sataTestButton.setEnabled(false);
-                sataTestButton.setBackgroundColor(Color.LTGRAY);
-                setSystemProperty("sata_test",  "1");
-
-
-
-                // 添加延迟
-                handler.postDelayed(new Runnable() {
-                    @Override
-                    public void run() {
-
-                        Boolean sataflag = Boolean.parseBoolean(getSystemProperty("rp.sata.storage.flag"));
-                        if(sataflag)
-                        {
-                            sataStatusTextView.setText("SATA已挂载");
-                        }else {
-                            sataStatusTextView.setText("SATA未挂载或未格式化");
-                            setSystemProperty("sata_test",  "0");
-                            return;
-                        }
-                        handler.post(checkStorageTask);
-
-                        checkStorageTask = new Runnable() {
-                            @Override
-                            public void run() {
-                                // 检查存储状态
-                                Boolean sterrflag = Boolean.parseBoolean(getSystemProperty("rp.sata.rw.err"));
-                                if(sterrflag)
-                                {
-                                    sataTestButton.setBackgroundColor(Color.RED);
-                                }
-                                String executionCount = getSystemProperty("rp.sata.rw.count");
-                                Log.d(TAG, "脚本执行次数：" + executionCount);
-                                sataCheckView.setText("测试次数: " + executionCount);
-                                // 1秒后再次执行此任务
-                                handler.postDelayed(this, 1000);
-
-                                // 获取存储总容量和已使用容量
-                                String totalStorageStr = getSystemProperty("rp.sata.storage.total");
-                                String usedStorageStr = getSystemProperty("rp.sata.storage.used");
-
-                                // 将存储容量从字节转换为GB
-                                double totalStorage = Double.parseDouble(totalStorageStr) / 1000000;
-                                double usedStorage = Double.parseDouble(usedStorageStr) / 1000000;
-
-                                // 更新used1_space_text_view的文本
-                                sataUsedSpaceTextView.setText("已使用容量: " + String.format("%.2f", usedStorage) + " GB\\总容量: " + String.format("%.2f", totalStorage) + " GB");
-                            }
-                        };
-                        // 启动检查任务
-                        handler.post(checkStorageTask);
-                    }
-                }, 500);  // 延迟1秒
-            }
-        });
-
-
-        Button M2TestButton = findViewById(R.id.m2_test_button);
-        M2TestButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                M2TestButton.setEnabled(false);
-                M2TestButton.setBackgroundColor(Color.LTGRAY);
-                setSystemProperty("m2_test",  "1");
-                handler.postDelayed(new Runnable() {
-                    @Override
-                    public void run() {
-                Boolean m2flag = Boolean.parseBoolean(getSystemProperty("rp.m2.storage.flag"));
-                if(m2flag)
-                {
-                    M2StatusTextView.setText("M2已挂载");
-                }else {
-                    M2StatusTextView.setText("M2未挂载或未格式化");
-                    setSystemProperty("m2_test",  "0");
-                    return;
-                }
-                handler.post(checkStorageTask);
-
-                checkStorageTask = new Runnable() {
-                    @Override
-                    public void run() {
-                        // 检查存储状态
-                        Boolean m2errflag = Boolean.parseBoolean(getSystemProperty("rp.m2.rw.err"));
-                        if(m2errflag)
-                        {
-                            M2TestButton.setBackgroundColor(Color.RED);
-                        }
-                        String executionCount = getSystemProperty("rp.m2.rw.count");
-                        Log.d(TAG, "脚本执行次数：" + executionCount);
-                        m2CheckView.setText("测试次数: " + executionCount);
-                        // 1秒后再次执行此任务
-                        handler.postDelayed(this, 1000);
-
-                        // 获取存储总容量和已使用容量
-                        String totalStorageStr = getSystemProperty("rp.m2.storage.total");
-                        String usedStorageStr = getSystemProperty("rp.m2.storage.used");
-
-                        // 将存储容量从字节转换为GB
-                        double totalStorage = Double.parseDouble(totalStorageStr) / 1000000;
-                        double usedStorage = Double.parseDouble(usedStorageStr) / 1000000;
-
-                        // 更新used1_space_text_view的文本
-                       // TextView used1SpaceTextView = findViewById(R.id.used1_space_text_view);
-                        m2UsedSpaceTextView.setText("已使用容量: " + String.format("%.2f", usedStorage) + " GB\\总容量: " + String.format("%.2f", totalStorage) + " GB");
-                    }
-                };
-// 启动检查任务
-                handler.post(checkStorageTask);
-
-
-            }
-                }, 500);  // 延迟1秒
-            }
-        });
-
 
 
         Button DVTestButton = findViewById(R.id.double_video_button);
@@ -513,68 +218,16 @@ public class MainActivity extends AppCompatActivity {
         }
 
 
-        wifiCountTextView = findViewById(R.id.wifi_count_text_view);
-        bluetoothCountTextView = findViewById(R.id.bluetooth_count_text_view);
-
-        wifiStateReceiver = new BroadcastReceiver() {
+        StorageButton = findViewById(R.id.Storage_button);
+        StorageButton.setOnClickListener(new View.OnClickListener() {
             @Override
-            public void onReceive(Context context, Intent intent) {
-                int wifiStateExtra = intent.getIntExtra(WifiManager.EXTRA_WIFI_STATE, WifiManager.WIFI_STATE_UNKNOWN);
-               if(!wifiButton.isEnabled()) {
-                   switch (wifiStateExtra) {
-                       case WifiManager.WIFI_STATE_ENABLED:
-                           wifiEnabledCount++;
-                           wifiCountTextView.setText("WiFi打开成功的次数: " + wifiEnabledCount);
-                           break;
-                       case WifiManager.WIFI_STATE_DISABLED:
-                           // WiFi已关闭
-                           break;
-                       case WifiManager.WIFI_STATE_UNKNOWN:
-                           // WiFi启动失败，将按钮颜色设置为红色
-                           wifiButton.setBackgroundColor(Color.RED);
-                           break;
-                       default:
-                           break;
-                   }
-               }
+            public void onClick(View v) {
+                Intent intent = new Intent(MainActivity.this, StorageTestActivity.class);
+                startActivity(intent);
             }
-        };
+        });
 
-        registerReceiver(wifiStateReceiver, new IntentFilter(WifiManager.WIFI_STATE_CHANGED_ACTION));
-
-        bluetoothStateReceiver = new BroadcastReceiver() {
-            @Override
-            public void onReceive(Context context, Intent intent) {
-                final String action = intent.getAction();
-
-                if (action.equals(BluetoothAdapter.ACTION_STATE_CHANGED)) {
-                    final int state = intent.getIntExtra(BluetoothAdapter.EXTRA_STATE, BluetoothAdapter.ERROR);
-                    if (!bluetoothButton.isEnabled())
-                    {
-                        switch (state) {
-                            case BluetoothAdapter.STATE_ON:
-                                bluetoothEnabledCount++;
-                                bluetoothCountTextView.setText("蓝牙打开成功的次数: " + bluetoothEnabledCount);
-                                break;
-                            case BluetoothAdapter.STATE_OFF:
-                                // 蓝牙已关闭
-                                break;
-                            case BluetoothAdapter.ERROR:
-                                bluetoothButton.setBackgroundColor(Color.RED);
-                                break;
-                            default:
-                                break;
-                        }
-                }
-                }
-            }
-        };
-
-        registerReceiver(bluetoothStateReceiver, new IntentFilter(BluetoothAdapter.ACTION_STATE_CHANGED));
-
-
-
-        Button wifiStatusButton = findViewById(R.id.wifi_status_test_button);
+        wifiStatusButton = findViewById(R.id.wifi_status_test_button);
         wifiStatusButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -583,7 +236,7 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        Button ethButton = findViewById(R.id.ethernet_status_test_button);
+        ethButton = findViewById(R.id.ethernet_status_test_button);
         ethButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -593,7 +246,7 @@ public class MainActivity extends AppCompatActivity {
         });
 
 
-        Button uartButton = findViewById(R.id.uart_test_button);
+        uartButton = findViewById(R.id.uart_test_button);
         uartButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -602,7 +255,7 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        Button canButton = findViewById(R.id.can_test_button);
+        canButton = findViewById(R.id.can_test_button);
         canButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -611,8 +264,7 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-
-        Button spiButton = findViewById(R.id.spi_test_button);
+        spiButton = findViewById(R.id.spi_test_button);
         spiButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -647,71 +299,180 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        Button stopButton = findViewById(R.id.stop_button);
+        Button WifiBtButton = findViewById(R.id.Wifi_Bt_button);
+        WifiBtButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent(MainActivity.this, WifiBtSwitchTestActivity.class);
+                intent.putExtra("TIMER", false); // 不启动定时器
+                startActivity(intent);
+            }
+        });
 
+
+
+        Button autoTestButton = findViewById(R.id.auto_test_button);
+        autoTestButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                autoTestButton.setEnabled(false);
+                int hours = hoursPicker.getValue();
+                int minutes = minutesPicker.getValue();
+                int seconds = secondsPicker.getValue();
+                int timeInSeconds = hours * 3600 + minutes * 60 + seconds;
+                int timeInMillis = timeInSeconds * 1000;
+
+                // Start WifiBtSwitchTestActivity with request code
+                Intent intent = new Intent(MainActivity.this, WifiBtSwitchTestActivity.class);
+                intent.putExtra("TIMER", true); // 传递是否启动定时器
+                intent.putExtra("TIME_IN_SECONDS", timeInSeconds); // 传递定时时间
+                startActivityForResult(intent, REQUEST_CODE_1);
+
+                // Use CountDownTimer for countdown
+                new CountDownTimer(timeInMillis, 1000) {
+                    @Override
+                    public void onTick(long millisUntilFinished) {
+                        int remainingHours = (int) (millisUntilFinished / 3600000);
+                        int remainingMinutes = (int) (millisUntilFinished % 3600000) / 60000;
+                        int remainingSeconds = (int) (millisUntilFinished % 60000) / 1000;
+                        hoursPicker.setValue(remainingHours);
+                        minutesPicker.setValue(remainingMinutes);
+                        secondsPicker.setValue(remainingSeconds);
+                    }
+                    @Override
+                    public void onFinish() {
+                        hoursPicker.setValue(0);
+                        minutesPicker.setValue(0);
+                        secondsPicker.setValue(0);
+                        autoTestButton.setEnabled(true);
+                        Toast.makeText(MainActivity.this, "倒计时结束", Toast.LENGTH_SHORT).show();
+                        WifiBtButton.setBackgroundColor(Color.GREEN);
+                        // Finish WifiBtSwitchTestActivity and return to MainActivity
+                       /* Intent resultIntent = new Intent();
+                        setResult(RESULT_OK, resultIntent);
+                        finish(); */
+                    }
+                }.start();
+            }
+
+
+        });
+
+        Button stopButton = findViewById(R.id.stop_button);
         stopButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                wifiButton.setEnabled(true);
-                wifiButton.setBackgroundColor(Color.BLUE);
-                bluetoothButton.setEnabled(true);
-                bluetoothButton.setBackgroundColor(Color.BLUE );
-                sdTestButton.setEnabled(true);
-                sdTestButton.setBackgroundColor(Color.BLUE);
-                sataTestButton.setEnabled(true);
-                sataTestButton.setBackgroundColor(Color.BLUE);
-                UsbTestButton.setEnabled(true);
-                UsbTestButton.setBackgroundColor(Color.BLUE);
-                M2TestButton.setEnabled(true);
-                M2TestButton.setBackgroundColor(Color.BLUE);
                 wifiStatusButton.setEnabled(true);
                 ethButton.setEnabled(true);
                 startTime.setEnabled(true);
                 timeDisplay.stop();
 
-                if (checkStorageTask != null) {
-                    // 移除消息队列中所有的checkStorageTask任务
-                    handler.removeCallbacksAndMessages(null);
-                    checkStorageTask = null;
-                }
-                if (timer != null) {
-                    timer.cancel();
-                    timer = null;
-                }
-                wifiEnabled = false;
-                setProperty("wifi_test", "0");
-                setProperty("sdcard_test", "0");
-                setProperty("udisk_test", "0");
-                setProperty("sata_test", "0");
-                setProperty("m2_test", "0");
-                // 清除statusTextView的文本
-                sdStatusTextView.setText("SD状态");
-                sdUsedSpaceTextView.setText("已使用容量/总容量");
-                sdCheckView.setText("测试次数：");
-                setSystemProperty("rp.sdcard.rw.count" , "0");
-                sataStatusTextView.setText("SATA状态");
-                sataUsedSpaceTextView.setText("已使用容量/总容量");
-                sataCheckView.setText("测试次数：");
-                setSystemProperty("rp.sata.rw.count" , "0");
-                UsbStatusTextView.setText("U盘状态");
-                udiskUsedSpaceTextView.setText("已使用容量/总容量");
-                udiskCheckView.setText("测试次数：");
-                setSystemProperty("rp.udisk.rw.count" , "0");
-                M2StatusTextView.setText("M2状态");
-                m2UsedSpaceTextView.setText("已使用容量/总容量");
-                m2CheckView.setText("测试次数：");
-                setSystemProperty("rp.m2.rw.count" , "0");
             }
         });
+
 
     }
 
     @Override
-    protected void onDestroy() {
-        super.onDestroy();
-        unregisterReceiver(wifiStateReceiver);
-        unregisterReceiver(bluetoothStateReceiver);
+    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        Log.d("MainActivity", "Result Code: " + resultCode);
 
+        // 检查 data 是否为 null
+        if (data != null) {
+            // 打印 Intent 中所有的 Extra 数据
+            Bundle extras = data.getExtras();
+            if (extras != null) {
+                for (String key : extras.keySet()) {
+                    Object value = extras.get(key);
+                    Log.d("MainActivity", "Key: " + key + " Value: " + value);
+                }
+            }
+        } else {
+            Log.d("MainActivity", "Data is null");
+        }
+
+        if (resultCode == RESULT_OK && data != null) {
+            if (requestCode == REQUEST_CODE_1) {
+                boolean startTimer = data.getBooleanExtra("TIMER", false);
+                int timeInSeconds = data.getIntExtra("TIME_IN_SECONDS", 0);
+                if (startTimer) {
+                    Log.d("MainActivity", "Storage test start !!!!");
+                    Intent intent = new Intent(MainActivity.this, StorageTestActivity.class);
+                    intent.putExtra("TIME_IN_SECONDS", timeInSeconds);
+                    intent.putExtra("TIMER", true); // 传递是否启动定时器
+                    startActivityForResult(intent, REQUEST_CODE_2);
+                }
+            }   else if (requestCode == REQUEST_CODE_2) {
+                Toast.makeText(MainActivity.this, "倒计时结束", Toast.LENGTH_SHORT).show();
+                StorageButton.setBackgroundColor(Color.GREEN);
+                boolean startTimer = data.getBooleanExtra("TIMER", false);
+                int timeInSeconds = data.getIntExtra("TIME_IN_SECONDS", 0);
+                if (startTimer) {
+                    Log.d("MainActivity", "Wifi test start !!!!");
+                    Toast.makeText(MainActivity.this, "倒计时结束", Toast.LENGTH_SHORT).show();
+                    Intent intent = new Intent(MainActivity.this, WifiTestActivity.class);
+                    intent.putExtra("TIME_IN_SECONDS", timeInSeconds);
+                    intent.putExtra("TIMER", true); // 传递是否启动定时器
+                    startActivityForResult(intent, REQUEST_CODE_3);
+                }
+            }
+            else if (requestCode == REQUEST_CODE_3) {
+                Toast.makeText(MainActivity.this, "倒计时结束", Toast.LENGTH_SHORT).show();
+                wifiStatusButton.setBackgroundColor(Color.GREEN);
+                boolean startTimer = data.getBooleanExtra("TIMER", false);
+                int timeInSeconds = data.getIntExtra("TIME_IN_SECONDS", 0);
+                if (startTimer) {
+                    Log.d("MainActivity", "ETH test start !!!!");
+                    Intent intent = new Intent(MainActivity.this, NetworkTestActivity.class);
+                    intent.putExtra("TIME_IN_SECONDS", timeInSeconds);
+                    intent.putExtra("TIMER", true); // 传递是否启动定时器
+                    startActivityForResult(intent, REQUEST_CODE_4);
+                }
+            }
+            else if (requestCode == REQUEST_CODE_4) {
+                Toast.makeText(MainActivity.this, "倒计时结束", Toast.LENGTH_SHORT).show();
+                ethButton.setBackgroundColor(Color.GREEN);
+                boolean startTimer = data.getBooleanExtra("TIMER", false);
+                int timeInSeconds = data.getIntExtra("TIME_IN_SECONDS", 0);
+                if (startTimer) {
+                    Log.d("MainActivity", "Uart test start !!!!");
+                    Intent intent = new Intent(MainActivity.this, CanTestActivity.class);
+                    intent.putExtra("TIME_IN_SECONDS", timeInSeconds);
+                    intent.putExtra("TIMER", true); // 传递是否启动定时器
+                    startActivityForResult(intent, REQUEST_CODE_5);
+                }
+            }
+            else if (requestCode == REQUEST_CODE_5) {
+                Toast.makeText(MainActivity.this, "倒计时结束", Toast.LENGTH_SHORT).show();
+                canButton.setBackgroundColor(Color.GREEN);
+                boolean startTimer = data.getBooleanExtra("TIMER", false);
+                int timeInSeconds = data.getIntExtra("TIME_IN_SECONDS", 0);
+                if (startTimer) {
+                    Log.d("MainActivity", "Can test start !!!!");
+                    Intent intent = new Intent(MainActivity.this, SpiTestActivity.class);
+                    intent.putExtra("TIME_IN_SECONDS", timeInSeconds);
+                    intent.putExtra("TIMER", true); // 传递是否启动定时器
+                    startActivityForResult(intent, REQUEST_CODE_6);
+                }
+            }
+
+            else if (requestCode == REQUEST_CODE_6) {
+                Toast.makeText(MainActivity.this, "倒计时结束", Toast.LENGTH_SHORT).show();
+                spiButton.setBackgroundColor(Color.GREEN);
+            //    boolean startTimer = data.getBooleanExtra("TIMER", false);
+              //  int timeInSeconds = data.getIntExtra("TIME_IN_SECONDS", 0);
+             /*   if (startTimer) {
+                    Log.d("MainActivity", "SPI test start !!!!");
+                    Intent intent = new Intent(MainActivity.this, UartTestActivity.class);
+                    intent.putExtra("TIME_IN_SECONDS", timeInSeconds);
+                    intent.putExtra("TIMER", true); // 传递是否启动定时器
+                  //  startActivityForResult(intent, REQUEST_CODE_3);
+                }*/
+            }
+
+
+        }
     }
 
     public static boolean upgradeRootPermission(String pkgCodePath) {

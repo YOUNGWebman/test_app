@@ -8,6 +8,7 @@ import android.os.Bundle;
 import android.os.Handler;
 
 import android.os.SystemClock;
+import android.view.KeyEvent;
 import android.widget.TextView;
 
 import androidx.appcompat.app.AppCompatActivity;
@@ -40,11 +41,36 @@ public class NetworkTestActivity extends AppCompatActivity {
     private Runnable runnable, runnable1, runnable2;
     private Handler handler = new Handler(), handler1 = new Handler(), handler2 = new Handler();
     private NetworkTest networkTest, networkTest1, networkTest2;
+    private boolean timerEnabled;
+    private int timeInSeconds;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_network_test);
+        Intent intent = getIntent();
+        timerEnabled = intent.getBooleanExtra("TIMER", false);
+        timeInSeconds = intent.getIntExtra("TIME_IN_SECONDS", 0);
+
+        if (timerEnabled) {
+            int timeInMillis = timeInSeconds * 1000;
+
+            // 启动倒计时器，定时退出
+            new Handler().postDelayed(new Runnable() {
+                @Override
+                public void run() {
+
+                    Intent resultIntent = new Intent();
+                    resultIntent.putExtra("TIMER", true);
+                    resultIntent.putExtra("TIME_IN_SECONDS", timeInSeconds);
+
+                    setResult(RESULT_OK, resultIntent);
+
+                    finish();
+                }
+            }, timeInMillis);
+        }
+
         networkStatusTextView = findViewById(R.id.ethnetwork_status_text_view);
         networkStatusTextView1 = findViewById(R.id.ethnetwork1_status_text_view);
         networkStatusTextView2 = findViewById(R.id.ethnetwork2_status_text_view);
@@ -54,12 +80,6 @@ public class NetworkTestActivity extends AppCompatActivity {
         AtomicBoolean isRunning1 = new AtomicBoolean(false);
         AtomicBoolean isRunning2 = new AtomicBoolean(false);
 
-        // 初始化isStoped
- /*       AtomicBoolean isStoped0 = new AtomicBoolean(false);
-        AtomicBoolean isStoped1= new AtomicBoolean(false);
-        AtomicBoolean isStoped2 = new AtomicBoolean(false);
-
-  */
 
         // 为每个网络接口创建NetworkTest对象
         networkTest = new NetworkTest("eth0", handler, networkStatusTextView, this,  isRunning0);
@@ -79,6 +99,17 @@ public class NetworkTestActivity extends AppCompatActivity {
         networkTest.start();
         networkTest1.start();
         networkTest2.start();
+    }
+
+    @Override
+    public boolean dispatchKeyEvent(KeyEvent event) {
+        if (event.getKeyCode() == KeyEvent.KEYCODE_BACK && event.getAction() == KeyEvent.ACTION_DOWN) {
+            Intent intent = new Intent(NetworkTestActivity.this, MainActivity.class);
+            setResult(RESULT_OK, intent); // 返回结果
+            finish(); // 确保调用 finish() 方法
+            return true;
+        }
+        return super.dispatchKeyEvent(event);
     }
 
     @Override
@@ -104,8 +135,7 @@ public class NetworkTestActivity extends AppCompatActivity {
         private ConnectivityManager.NetworkCallback networkCallback;
         private Network currentNetwork;
         private AtomicBoolean networkLost = new AtomicBoolean(false);
-       // private Runnable runnable;
-       // private AtomicBoolean isStopped = new AtomicBoolean(false);
+
 
 
         public NetworkTest(String interfaceName, Handler handler, TextView networkStatusTextView, Context context, AtomicBoolean isRunning) {
@@ -237,111 +267,6 @@ public class NetworkTestActivity extends AppCompatActivity {
         }
     }
 
-
-
-
-
-
-  /*  public class NetworkTest {
-        private String interfaceName;
-        private Handler handler;
-        private TextView networkStatusTextView;
-        private long startTime;
-        private AtomicBoolean shouldStop = new AtomicBoolean(false);
-        private boolean isRunning = false;
-        private double lastRecordedTime = 0;
-        private Context context;
-        private ConnectivityManager.NetworkCallback networkCallback;  // 新增
-
-        public NetworkTest(String interfaceName, Handler handler, TextView networkStatusTextView, Context context) {
-            this.interfaceName = interfaceName;
-            this.handler = handler;
-            this.networkStatusTextView = networkStatusTextView;
-            this.startTime = System.currentTimeMillis();
-            this.context = context;
-            this.networkCallback = new ConnectivityManager.NetworkCallback() {  // 新增
-                @Override
-                public void onAvailable(Network network) {
-                    // 网络连接可用时调用
-                    Log.d("NetworkTest", "Network is available");
-                    if (!isRunning) {
-                        isRunning = true;
-                        shouldStop.set(false);  // 允许新线程
-                        startTime = System.currentTimeMillis();  // 重新开始计时
-                        handler.post(runnable);  // 重新开始Runnable
-                    }
-                }
-
-                @Override
-                public void onLost(Network network) {
-                    // 网络连接丢失时调用
-                    Log.d("NetworkTest", "Network is lost");
-                    isRunning = false;
-                    handler.removeCallbacks(runnable);  // 停止Runnable
-                    shouldStop.set(true);  // 停止新线程
-                    // 更新UI
-                    networkStatusTextView.setText("测试失败" + "\nDuration:" + lastRecordedTime + " s");
-                    // 打印当前的interfaceName
-                    Log.d("NetworkTest", "Interface disconnected: " + interfaceName);
-                }
-            };
-        }
-
-        public void start() {
-            if (!isRunning) {
-                isRunning = true;
-                Runnable runnable = new Runnable() {
-                    @Override
-                    public void run() {
-                        if (!isRunning) {
-                            Log.d("NetworkTest", "Not running");
-                            return;
-                        }
-
-                        new Thread(new Runnable() {
-                            @Override
-                            public void run() {
-                                if (shouldStop.get()) {
-                                    return;
-                                }
-
-                                // 检查网络接口是否已经启动
-                                if (!NetworkUtils.isInterfaceConnected(interfaceName, context)) {
-                                    Log.d("NetworkTest", "Interface " + interfaceName + " is not connected");
-                                    return;
-                                }
-
-                                final String ip = NetworkUtils.getNetWorkIp(interfaceName);
-                                Log.d("NetworkTest", "ip" + interfaceName);
-                                final String pingResult = NetworkUtils.ping("www.qq.com");
-
-                                // 在主线程中更新TextView
-                                runOnUiThread(new Runnable() {
-                                    @Override
-                                    public void run() {
-                                        if (!isRunning || shouldStop.get()) {
-                                            networkStatusTextView.setText("测试失败" + "\nDuration:" + lastRecordedTime + " s");
-                                            isRunning = false;
-                                            return;
-                                        }
-                                        long currentTime = System.currentTimeMillis();
-                                        long duration = currentTime - startTime;
-                                        double durationInSeconds = duration / 1000.0;
-                                        lastRecordedTime = durationInSeconds;  // 更新lastRecordedTime的值
-                                        networkStatusTextView.setText("IP: " + ip + "\nPing result: " + pingResult + "\nDuration: " + durationInSeconds + " s");
-                                    }
-                                });
-                            }
-                        }).start();
-
-                        // 每0.5秒执行一次
-                        handler.postDelayed(this, 500);
-                    }
-                };
-                handler.post(runnable);
-            }
-        }
-    }  */
 
     public static class NetworkUtils {
         public static String getNetWorkIp(String interfaceName) {

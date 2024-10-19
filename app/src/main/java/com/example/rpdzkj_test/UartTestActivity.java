@@ -6,6 +6,7 @@ import java.util.concurrent.CountDownLatch;
 import com.example.rpdzkj_test.TimeDisplay;
 
 
+import android.content.Intent;
 import android.os.Bundle;
 import java.lang.Thread;
 import android.os.Handler;
@@ -14,6 +15,7 @@ import android.os.Message;
 
 import android.util.DisplayMetrics;
 import android.util.Log;
+import android.view.KeyEvent;
 import android.widget.GridLayout;
 import android.widget.TextView;
 import android.widget.Button;
@@ -55,6 +57,8 @@ public class UartTestActivity extends AppCompatActivity {
     ArrayList<TextView> receiveTextViewList = null;
     ArrayList<TextView> countTextViewList = null;
     List<AtomicBoolean> shouldStops = null;
+    private boolean timerEnabled;
+    private int timeInSeconds;
    // int successCount =0;
    int[] array = new int[10]; // Java中的数组默认初始化为0
     private TimeDisplay timeDisplay;
@@ -298,9 +302,32 @@ public void doTest() {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_uart_test);
+        Intent intent = getIntent();
+        timerEnabled = intent.getBooleanExtra("TIMER", false);
+        timeInSeconds = intent.getIntExtra("TIME_IN_SECONDS", 0);
 
+
+        if (timerEnabled) {
+            int timeInMillis = timeInSeconds * 1000;
+
+            // 启动倒计时器，定时退出
+            new Handler().postDelayed(new Runnable() {
+                @Override
+                public void run() {
+
+                    Intent resultIntent = new Intent();
+                    resultIntent.putExtra("TIMER", true);
+                    resultIntent.putExtra("TIME_IN_SECONDS", timeInSeconds);
+
+                    setResult(RESULT_OK, resultIntent);
+
+                    finish();
+                }
+            }, timeInMillis);
+        }
         getTimeTextView = findViewById(R.id.uartTimeText);
         // 初始化checkBoxArrayList
+
         resultHandler = new Handler(Looper.getMainLooper()) {
             @Override
             public void handleMessage(Message msg) {
@@ -340,6 +367,17 @@ public void doTest() {
                 });
             }
         });
+    }
+
+    @Override
+    public boolean dispatchKeyEvent(KeyEvent event) {
+        if (event.getKeyCode() == KeyEvent.KEYCODE_BACK && event.getAction() == KeyEvent.ACTION_DOWN) {
+            Intent intent = new Intent(UartTestActivity.this, MainActivity.class);
+            setResult(RESULT_OK, intent); // 返回结果
+            finish(); // 确保调用 finish() 方法
+            return true;
+        }
+        return super.dispatchKeyEvent(event);
     }
 
     @Override

@@ -1,0 +1,172 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".StorageTestActivity">
+
+    <Button
+        android:id="@+id/stop_button"
+        android:layout_width="80dp"
+        android:layout_height="50dp"
+        android:layout_marginTop="10dp"
+        android:layout_marginLeft="250dp"
+        android:text="STOP"
+        android:textSize="8sp" />
+
+    <Button
+        android:id="@+id/sd_test_button"
+        android:layout_width="80dp"
+        android:layout_height="50dp"
+        android:layout_marginTop="175dp"
+        android:layout_marginLeft="50dp"
+        android:text="SD"
+        android:textSize="8sp" />
+
+    <TextView
+        android:id="@+id/sd_status_text_view"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="190dp"
+        android:layout_marginLeft="150dp"
+        android:text="SD状态"
+        android:textSize="16sp" />
+
+
+
+    <TextView
+        android:id="@+id/sd_check_status_text_view"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="190dp"
+        android:layout_marginLeft="800dp"
+        android:text="测试次数："
+        android:textSize="16sp" />
+
+    <Button
+        android:id="@+id/sata_test_button"
+        android:layout_width="80dp"
+        android:layout_height="50dp"
+        android:layout_marginTop="225dp"
+        android:layout_marginLeft="50dp"
+        android:text="SATA"
+        android:textSize="8sp" />
+
+    <TextView
+        android:id="@+id/sata_status_text_view"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="240dp"
+        android:layout_marginLeft="150dp"
+        android:text="SATA状态"
+        android:textSize="16sp" />
+
+
+
+    <TextView
+        android:id="@+id/sata_check_status_text_view"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="240dp"
+        android:layout_marginLeft="800dp"
+        android:text="测试次数："
+        android:textSize="16sp" />
+
+    <Button
+        android:id="@+id/usb_test_button"
+        android:layout_width="80dp"
+        android:layout_height="50dp"
+        android:layout_marginTop="275dp"
+        android:layout_marginLeft="50dp"
+        android:text="USB"
+        android:textSize="8sp" />
+
+    <TextView
+        android:id="@+id/usb_status_text_view"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="290dp"
+        android:layout_marginLeft="150dp"
+        android:text="U盘状态"
+        android:textSize="16sp" />
+
+
+
+    <TextView
+        android:id="@+id/udisk_check_status_text_view"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="290dp"
+        android:layout_marginLeft="800dp"
+        android:text="测试次数："
+        android:textSize="16sp" />
+
+    <Button
+        android:id="@+id/m2_test_button"
+        android:layout_width="80dp"
+        android:layout_height="50dp"
+        android:layout_marginTop="325dp"
+        android:layout_marginLeft="50dp"
+        android:text="M.2"
+        android:textSize="8sp" />
+
+    <TextView
+        android:id="@+id/M2_status_text_view"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="340dp"
+        android:layout_marginLeft="150dp"
+        android:text="M2状态"
+        android:textSize="16sp" />
+
+
+
+    <TextView
+        android:id="@+id/m2_check_status_text_view"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="340dp"
+        android:layout_marginLeft="800dp"
+        android:text="测试次数："
+        android:textSize="16sp" />
+
+
+    <TextView
+        android:id="@+id/sd_used_space_text_view"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="190dp"
+        android:layout_marginLeft="400dp"
+        android:text="已使用容量/总容量"
+        android:textSize="16sp" />
+
+    <TextView
+        android:id="@+id/sata_used_space_text_view"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="240dp"
+        android:layout_marginLeft="400dp"
+        android:text="已使用容量/总容量"
+        android:textSize="16sp" />
+
+    <TextView
+        android:id="@+id/udisk_used_space_text_view"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="290dp"
+        android:layout_marginLeft="400dp"
+        android:text="已使用容量/总容量"
+        android:textSize="16sp" />
+
+    <TextView
+        android:id="@+id/m2_used_space_text_view"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="340dp"
+        android:layout_marginLeft="400dp"
+        android:text="已使用容量/总容量"
+        android:textSize="16sp" />
+
+
+
+</RelativeLayout>
