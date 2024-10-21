@@ -31,8 +31,7 @@ import android.net.NetworkRequest;
 import android.net.NetworkCapabilities;
 import android.net.Network;
 import android.os.SystemClock;
-
-
+import android.widget.Toast;
 
 
 public class WifiTestActivity extends AppCompatActivity {
@@ -44,6 +43,15 @@ public class WifiTestActivity extends AppCompatActivity {
     private NetworkTest networkTest;
     private boolean timerEnabled;
     private int timeInSeconds;
+
+    private Handler thandler;
+    private Runnable trunnable;
+
+    private AtomicBoolean  isTimerRunning = new AtomicBoolean(false); // 用于检查定时器状态
+    private AtomicBoolean  shouldPause = new AtomicBoolean(false); // 标志是否应暂停
+
+    private Handler monitorHandler;
+    private Runnable monitorRunnable;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -68,12 +76,13 @@ public class WifiTestActivity extends AppCompatActivity {
                     resultIntent.putExtra("TIME_IN_SECONDS", timeInSeconds);
 
                     setResult(RESULT_OK, resultIntent);
-
-                    finish();
+                    if( !shouldPause.get())
+                    {finish();}
                 }
             }, timeInMillis);
         }
-        // 初始化isRunning
+
+     // 初始化isRunning
         AtomicBoolean isRunning0 = new AtomicBoolean(false);
 
         // 为每个网络接口创建NetworkTest对象
@@ -88,6 +97,8 @@ public class WifiTestActivity extends AppCompatActivity {
 
         // 开始测试
         networkTest.start();
+
+
     }
 
     @Override
@@ -130,6 +141,7 @@ public class WifiTestActivity extends AppCompatActivity {
                             shouldStop.set(true);
                             networkLost.set(true);
                             networkStatusTextView.setText("测试失败" + "\nDuration:" + lastRecord);
+                            shouldPause.set(true);
                             Log.d("NetworkTest", "Interface disconnected: " + interfaceName);
                         }
                     }
@@ -175,6 +187,7 @@ public class WifiTestActivity extends AppCompatActivity {
                                     runOnUiThread(new Runnable() {
                                         @Override
                                         public void run() {
+                                            shouldPause.set(true);
                                             networkStatusTextView.setText("测试失败" + "\nDuration:" + lastRecord);
                                         }
                                     });
@@ -201,6 +214,7 @@ public class WifiTestActivity extends AppCompatActivity {
                                         {
                                             networkStatusTextView.setText("测试失败1" + "\nDuration:" + lastRecord);
                                             //  isStopped.set(true);
+                                            shouldPause.set(true);
                                             shouldStop.set(true);
                                             isRunning.set(false);
                                             return;

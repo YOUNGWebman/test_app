@@ -14,6 +14,7 @@ import android.os.Bundle;
 import android.util.Log;
 import android.widget.Button;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import java.io.*;
 
@@ -21,6 +22,7 @@ import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Locale;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 
 
@@ -92,13 +94,18 @@ public class CanTestActivity extends AppCompatActivity {
 
     private boolean timerEnabled;
     private int timeInSeconds;
+    private Handler handler;
+    private Runnable runnable;
+
+    private AtomicBoolean  shouldPause = new AtomicBoolean(false); // 标志是否应暂停
 
 
-
+    private static final String TAG = "CanTestActivity";
 
     public void onCreate(Bundle paramBundle) {
         super.onCreate(paramBundle);
         setContentView(R.layout.activity_can_test);
+        Button startCanButton = findViewById(R.id.start_can_test_button);
         getTimeTextView = findViewById(R.id.canTime);
         upgradeRootPermission("/data");
         String[] fileNames = {"can0.txt", "can1.txt", "can2.txt"};
@@ -108,10 +115,7 @@ public class CanTestActivity extends AppCompatActivity {
         timerEnabled = intent.getBooleanExtra("TIMER", false);
         timeInSeconds = intent.getIntExtra("TIME_IN_SECONDS", 0);
 
-        Button startCanButton = findViewById(R.id.start_can_test_button);
-
-
-        startCanButton.setOnClickListener(new View.OnClickListener() {
+/* startCanButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 timeDisplay.start();
@@ -119,28 +123,52 @@ public class CanTestActivity extends AppCompatActivity {
                 for (String canFile : canFiles) {
                     checkCanFile(canFile);
                 }
+                if(canTotal == 2)
+                {
+                    // 取消定时器
+                    handler.removeCallbacks(runnable);
+                    return;
+
+                }
                 ((TextView) findViewById(R.id.canString)).setText(canTotal == 0 ? "检测CAN数为0,退出测试" : "当前CAN设备数量为： " + canTotal);
+            }
+        }); */
+
+        startCanButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                    timeDisplay.start();
+                    String[] canFiles = {"/sys/class/net/can0", "/sys/class/net/can1", "/sys/class/net/can2", "/sys/class/net/awlink0", "/sys/class/net/awlink1"};
+                    for (String canFile : canFiles) {
+                        checkCanFile(canFile);
+                    }
+                    ((TextView) findViewById(R.id.canString)).setText(canTotal == 0 ? "检测CAN数为0,退出测试" : "当前CAN设备数量为： " + canTotal);
+
             }
         });
 
         if (timerEnabled) {
             int timeInMillis = timeInSeconds * 1000;
-
-            startCanButton.performClick();
             // 启动倒计时器，定时退出
-            new Handler().postDelayed(new Runnable() {
+            handler = new Handler();
+            runnable = new Runnable() {
                 @Override
                 public void run() {
-
                     Intent resultIntent = new Intent();
                     resultIntent.putExtra("TIMER", true);
                     resultIntent.putExtra("TIME_IN_SECONDS", timeInSeconds);
-
                     setResult(RESULT_OK, resultIntent);
+                    if( !shouldPause.get())
                     finish();
                 }
-            }, timeInMillis);
+            };
+
+            handler.postDelayed(runnable, timeInMillis);
+            startCanButton.performClick();
         }
+
+
+
     }
 
 
@@ -225,6 +253,12 @@ public class CanTestActivity extends AppCompatActivity {
                         File f0 = new File(can0path);
                         upgradeRootPermission("data");
                         while (can0_flag){
+                         /*   if (shouldPause.get()) {
+                                // 暂停操作
+                                handler.removeCallbacks(runnable);
+                                timeDisplay.stop(); // 停止显示时间
+                                break;
+                            } */
                             if (!f0.exists()) {
                                 runCmd(cmd0Touch, 1);
                             }
@@ -272,6 +306,8 @@ public class CanTestActivity extends AppCompatActivity {
                                         final_flag[0] = 0;
                                         canOK++;
                                     } else {
+                                        shouldPause.set(true);
+                                        timeDisplay.pause();
                                         System.out.println("can0测试失败");
                                         ((TextView) findViewById(R.id.can0Send)).setText("测试失败");
                                         ((TextView) findViewById(R.id.can0Recive)).setText("测试失败");
@@ -304,7 +340,6 @@ public class CanTestActivity extends AppCompatActivity {
                             runCmd(cmd13, 1);
                             runCmd(cmd14, 1);
                             runCmd(cmd15, 1);
-
 
                             try {
                                 Thread.sleep(2000);  // 延迟1秒
@@ -343,6 +378,8 @@ public class CanTestActivity extends AppCompatActivity {
                                         final_flag[1] = 0;
                                         canOK++;
                                     } else {
+                                        shouldPause.set(true);
+                                        timeDisplay.pause();
                                         System.out.println("can1测试失败");
                                         ((TextView) findViewById(R.id.can1Send)).setText("测试失败");
                                         ((TextView) findViewById(R.id.can1Recive)).setText("测试失败");
@@ -415,6 +452,8 @@ public class CanTestActivity extends AppCompatActivity {
                                         final_flag[2] = 0;
                                         canOK++;
                                     } else {
+                                        shouldPause.set(true);
+                                        timeDisplay.pause();
                                         System.out.println("can2测试失败");
                                         ((TextView) findViewById(R.id.can2Send)).setText("测试失败");
                                         ((TextView) findViewById(R.id.can2Recive)).setText("测试失败");
@@ -485,6 +524,8 @@ public class CanTestActivity extends AppCompatActivity {
                                         final_flag[3] = 0;
                                         canOK++;
                                     } else {
+                                        shouldPause.set(true);
+                                        timeDisplay.pause();
                                         System.out.println("can1测试失败");
                                         ((TextView) findViewById(R.id.can0Send)).setText("测试失败");
                                         ((TextView) findViewById(R.id.can0Recive)).setText("测试失败");
@@ -555,6 +596,8 @@ public class CanTestActivity extends AppCompatActivity {
                                         final_flag[4] = 0;
                                         canOK++;
                                     } else {
+                                        shouldPause.set(true);
+                                        timeDisplay.pause();
                                         System.out.println("can1测试失败");
                                         ((TextView) findViewById(R.id.can1Send)).setText("测试失败");
                                         ((TextView) findViewById(R.id.can1Recive)).setText("测试失败");

@@ -39,24 +39,7 @@ import java.lang.reflect.Method;
 import java.util.Timer;
 import java.util.TimerTask;
 import android.graphics.Color;
-import androidx.annotation.Nullable;
-import android.widget.NumberPicker;
-import android.widget.Toast;
-import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.Locale;
-import java.util.List;
-import android.content.pm.ResolveInfo;
-
-import android.net.ConnectivityManager;
-import android.widget.Toast;
-import android.net.Uri;
-import androidx.annotation.NonNull;
-import android.content.ComponentName;
-import android.content.ActivityNotFoundException;
-import java.util.ArrayList;
-import android.os.Build;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 
 public class WifiBtSwitchTestActivity extends AppCompatActivity {
@@ -69,11 +52,16 @@ public class WifiBtSwitchTestActivity extends AppCompatActivity {
     private TextView wifiCountTextView;
     private TextView bluetoothCountTextView;
     private boolean wifiEnabled = false;
+    private TimeDisplay timeDisplay;
+    private TextView getTimeTextView;
     private Timer timer;
     private static final String TAG = "WifiBtSwitchTestActivity";
     private static final int DELAY_MS = 2000;  // 延迟2秒
     private boolean timerEnabled;
     private int timeInSeconds;
+
+    private AtomicBoolean  shouldPause = new AtomicBoolean(false); // 标志是否应暂停
+
 
 
     public void onCreate(Bundle paramBundle) {
@@ -86,8 +74,9 @@ public class WifiBtSwitchTestActivity extends AppCompatActivity {
         timerEnabled = intent.getBooleanExtra("TIMER", false);
         timeInSeconds = intent.getIntExtra("TIME_IN_SECONDS", 0);
 
-
-
+        getTimeTextView = findViewById(R.id.testTime);
+        timeDisplay = new TimeDisplay(getTimeTextView);
+        timeDisplay.start();
         Button wifiButton = findViewById(R.id.wifi_button);
         wifiButton.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -147,6 +136,8 @@ public class WifiBtSwitchTestActivity extends AppCompatActivity {
                         case WifiManager.WIFI_STATE_UNKNOWN:
                             // WiFi启动失败，将按钮颜色设置为红色
                             wifiButton.setBackgroundColor(Color.RED);
+                            timeDisplay.pause();
+                            shouldPause.set(true);
                             break;
                         default:
                             break;
@@ -176,6 +167,8 @@ public class WifiBtSwitchTestActivity extends AppCompatActivity {
                                 break;
                             case BluetoothAdapter.ERROR:
                                 bluetoothButton.setBackgroundColor(Color.RED);
+                                timeDisplay.pause();
+                                shouldPause.set(true);
                                 break;
                             default:
                                 break;
@@ -195,9 +188,6 @@ public class WifiBtSwitchTestActivity extends AppCompatActivity {
                 wifiButton.setBackgroundColor(Color.BLUE);
                 bluetoothButton.setEnabled(true);
                 bluetoothButton.setBackgroundColor(Color.BLUE );
-
-            //    startTime.setEnabled(true);
-              //  timeDisplay.stop();
 
                 if (timer != null) {
                     timer.cancel();
@@ -223,7 +213,10 @@ public class WifiBtSwitchTestActivity extends AppCompatActivity {
 
                     setResult(RESULT_OK, resultIntent);
                     stopButton.performClick();
-                    finish();
+                    if (!shouldPause.get() && !isFinishing()) {
+                        stopButton.performClick();
+                        finish();
+                    }
                 }
             }, timeInMillis);
         }

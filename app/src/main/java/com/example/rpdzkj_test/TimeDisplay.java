@@ -11,7 +11,8 @@ public class TimeDisplay {
     private Handler handler = new Handler();
     private Runnable runnable;
     private long startTime;
-
+    private long pausedTime; // 记录暂停时的已用时间
+    private boolean isPaused = false;
     public TimeDisplay(TextView textView) {
         this.timeTextView = textView;
     }
@@ -34,6 +35,16 @@ public class TimeDisplay {
 
         handler.post(runnable);
     }
+
+    public void pause() {
+        if (!isPaused) {
+            // 暂停定时器，记录已用时间
+            pausedTime = System.nanoTime() - startTime;
+            handler.removeCallbacks(runnable);
+            isPaused = true;
+        }
+    }
+
 
     public void stop() {
         handler.removeCallbacks(runnable);

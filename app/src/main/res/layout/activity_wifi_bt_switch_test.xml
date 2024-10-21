@@ -36,20 +36,28 @@
         android:id="@+id/wifi_count_text_view"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="270dp"
+        android:layout_marginTop="200dp"
         android:layout_marginLeft="0dp"
         android:text="WiFi打开成功的次数: 0"
-        android:textSize="16sp" />
+        android:textSize="20sp" />
 
     <TextView
         android:id="@+id/bluetooth_count_text_view"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="270dp"
+        android:layout_marginTop="200dp"
         android:layout_marginLeft="350dp"
         android:text="BT打开成功的次数: 0"
-        android:textSize="16sp" />
+        android:textSize="20sp" />
 
+    <TextView
+        android:id="@+id/testTime"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="当前运行时间： 00:00:00"
+        android:textSize="20sp"
+        android:layout_marginTop="280dp"
+        android:layout_marginLeft="0dp" />
 
 
 </RelativeLayout>

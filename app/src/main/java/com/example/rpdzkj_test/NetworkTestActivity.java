@@ -31,7 +31,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import android.net.NetworkRequest;
 import android.net.NetworkCapabilities;
 import android.net.Network;
-
+import android.widget.Toast;
 
 
 public class NetworkTestActivity extends AppCompatActivity {
@@ -44,6 +44,15 @@ public class NetworkTestActivity extends AppCompatActivity {
     private boolean timerEnabled;
     private int timeInSeconds;
 
+    private Handler thandler;
+    private Runnable trunnable;
+
+    private AtomicBoolean  isTimerRunning = new AtomicBoolean(false); // 用于检查定时器状态
+    private AtomicBoolean  shouldPause = new AtomicBoolean(false); // 标志是否应暂停
+
+    private Handler monitorHandler;
+    private Runnable monitorRunnable;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -51,25 +60,6 @@ public class NetworkTestActivity extends AppCompatActivity {
         Intent intent = getIntent();
         timerEnabled = intent.getBooleanExtra("TIMER", false);
         timeInSeconds = intent.getIntExtra("TIME_IN_SECONDS", 0);
-
-        if (timerEnabled) {
-            int timeInMillis = timeInSeconds * 1000;
-
-            // 启动倒计时器，定时退出
-            new Handler().postDelayed(new Runnable() {
-                @Override
-                public void run() {
-
-                    Intent resultIntent = new Intent();
-                    resultIntent.putExtra("TIMER", true);
-                    resultIntent.putExtra("TIME_IN_SECONDS", timeInSeconds);
-
-                    setResult(RESULT_OK, resultIntent);
-
-                    finish();
-                }
-            }, timeInMillis);
-        }
 
         networkStatusTextView = findViewById(R.id.ethnetwork_status_text_view);
         networkStatusTextView1 = findViewById(R.id.ethnetwork1_status_text_view);
@@ -95,10 +85,29 @@ public class NetworkTestActivity extends AppCompatActivity {
         connectivityManager.registerNetworkCallback(networkRequest, networkTest1.networkCallback);
         connectivityManager.registerNetworkCallback(networkRequest, networkTest2.networkCallback);
 
-        // 开始测试
         networkTest.start();
         networkTest1.start();
         networkTest2.start();
+
+        if (timerEnabled) {
+            int timeInMillis = timeInSeconds * 1000;
+
+            // 启动倒计时器，定时退出
+            new Handler().postDelayed(new Runnable() {
+                @Override
+                public void run() {
+
+                    Intent resultIntent = new Intent();
+                    resultIntent.putExtra("TIMER", true);
+                    resultIntent.putExtra("TIME_IN_SECONDS", timeInSeconds);
+
+                    setResult(RESULT_OK, resultIntent);
+                    if( ! shouldPause.get())
+                    { finish();}
+                }
+            }, timeInMillis);
+        }
+
     }
 
     @Override
@@ -106,7 +115,8 @@ public class NetworkTestActivity extends AppCompatActivity {
         if (event.getKeyCode() == KeyEvent.KEYCODE_BACK && event.getAction() == KeyEvent.ACTION_DOWN) {
             Intent intent = new Intent(NetworkTestActivity.this, MainActivity.class);
             setResult(RESULT_OK, intent); // 返回结果
-            finish(); // 确保调用 finish() 方法
+            if(! shouldPause.get())
+            { finish(); }// 确保调用 finish() 方法
             return true;
         }
         return super.dispatchKeyEvent(event);
@@ -145,38 +155,23 @@ public class NetworkTestActivity extends AppCompatActivity {
             this.startTime = SystemClock.elapsedRealtime();
             this.context = context;
             this.isRunning = isRunning;
-      //      this.isStopped = isStopped;
-            this.networkCallback = new ConnectivityManager.NetworkCallback() {
-           /*     @Override
-                public void onAvailable(Network network) {
-                    NetworkInterface networkInterface = getNetworkInterface(network);
-                    if (networkInterface != null && networkInterface.getName().equals(interfaceName)) {
-                        if(isStopped.get())
-                        {
-                            return;
-                        }
-                        currentNetwork = network;
-                        if (!isRunning.get()) {
-                            isRunning.set(true);
-                            shouldStop.set(false);
-                            startTime = System.currentTimeMillis();
 
-                            handler.post(runnable);
-                        }
-                    }
-                } */
+            this.networkCallback = new ConnectivityManager.NetworkCallback() {
+
 
                 @Override
                 public void onLost(Network network) {
                     if (network.equals(currentNetwork)) {
                         NetworkInterface networkInterface = getNetworkInterface(network);
+                       if( networkInterface == null)
                         if (networkInterface != null && networkInterface.getName().equals(interfaceName)) {
                             isRunning.set(false);
                             handler.removeCallbacks(runnable);
                             shouldStop.set(true);
                             networkLost.set(true);
                           //  isStopped.set(true);
-                            networkStatusTextView.setText("测试失败" + "\nDuration:" + lastRecord);
+                            isTimerRunning.set(true);
+                            networkStatusTextView.setText("测试失败!!" + "\nDuration:" + lastRecord);
                             Log.d("NetworkTest", "Interface disconnected: " + interfaceName);
                         }
                     }
@@ -215,11 +210,16 @@ public class NetworkTestActivity extends AppCompatActivity {
                                     return;
                                 }
                                 Log.d("NetworkTestIP0", "Interface " + interfaceName );
-                           //     if (!NetworkUtils.isInterfaceConnected(interfaceName, context))
+                                if (NetworkUtils.isSpecificInterfaceAvailable(interfaceName) == false) {
+
+                                    isRunning.set(false);
+                                    return;
+                                }
                                     if (NetworkUtils.getNetWorkIp(interfaceName) == null)
                                 {
                                     networkStatusTextView.setText("测试失败" + "\nDuration:" + lastRecord);
                                     isRunning.set(false);
+                                    shouldPause.set(true);
                                     Log.d("NetworkTestIP", "Interface " + interfaceName + " is not connected");
                                     return;
                                 }
@@ -228,21 +228,23 @@ public class NetworkTestActivity extends AppCompatActivity {
                                 Log.d("NetworkTest", "Interface: " + interfaceName + ", IP: " + ip);
                                 final String pingResult = NetworkUtils.ping("www.qq.com");
 
-                                runOnUiThread(new Runnable() {
+                     runOnUiThread(new Runnable() {
                                     @Override
                                     public void run() {
                                         //if (!isRunning.get() || shouldStop.get() || networkLost.get())
                                             if (!isRunning.get() )
                                             {
+
                                                 return;
                                             }
-                                            if(shouldStop.get() )
+                                            if(shouldStop.get())
 
                                         {
+                                            Log.d("NetworkTestIP0", "Interface ping failed" );
                                             networkStatusTextView.setText("测试失败1" + "\nDuration:" + lastRecord);
-                                          //  isStopped.set(true);
                                             shouldStop.set(true);
                                             isRunning.set(false);
+                                            isTimerRunning.set(true);
                                             return;
                                         }
                                         long currentTime = SystemClock.elapsedRealtime();
@@ -269,6 +271,7 @@ public class NetworkTestActivity extends AppCompatActivity {
 
 
     public static class NetworkUtils {
+
         public static String getNetWorkIp(String interfaceName) {
             try {
                 List<NetworkInterface> interfaces = Collections.list(NetworkInterface.getNetworkInterfaces());
@@ -296,7 +299,6 @@ public class NetworkTestActivity extends AppCompatActivity {
 
         public static String ping(String url) {
             String pingResult = "";
-
             try {
                 Process process = Runtime.getRuntime().exec("/system/bin/ping -c 1 " + url);
                 BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
@@ -319,7 +321,7 @@ public class NetworkTestActivity extends AppCompatActivity {
             NetworkInfo activeNetwork = cm.getActiveNetworkInfo();
             return activeNetwork != null && activeNetwork.isConnected();
         }
-        public static boolean isInterfaceConnected(String interfaceName, Context context) {
+        public static boolean isInterfaceConnected(String interfaceName) {
             try {
                 NetworkInterface networkInterface = NetworkInterface.getByName(interfaceName);
                 return networkInterface != null && networkInterface.isUp();
@@ -328,6 +330,24 @@ public class NetworkTestActivity extends AppCompatActivity {
                 return false;
             }
         }
+
+        public static boolean isSpecificInterfaceAvailable(String interfaceName) {
+            try {
+                List<NetworkInterface> interfaces = Collections.list(NetworkInterface.getNetworkInterfaces());
+                for (NetworkInterface intf : interfaces) {
+                    if (intf.getName().equalsIgnoreCase(interfaceName)) {
+                        Log.d("NetworkTestIP0", "Interface exist!!!!" );
+                        return true;
+                    }
+                }
+            } catch (SocketException e) {
+                e.printStackTrace();
+
+            }
+            Log.d("NetworkTestIP0", "Interface not exist!!!!" );
+            return false;
+        }
+
     }
 }
 

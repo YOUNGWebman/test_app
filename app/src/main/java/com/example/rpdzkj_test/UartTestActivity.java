@@ -4,7 +4,8 @@ import java.text.SimpleDateFormat;
 import java.util.Locale;
 import java.util.concurrent.CountDownLatch;
 import com.example.rpdzkj_test.TimeDisplay;
-
+import android.content.SharedPreferences;
+import android.content.Context;
 
 import android.content.Intent;
 import android.os.Bundle;
@@ -57,6 +58,7 @@ public class UartTestActivity extends AppCompatActivity {
     ArrayList<TextView> receiveTextViewList = null;
     ArrayList<TextView> countTextViewList = null;
     List<AtomicBoolean> shouldStops = null;
+    private AtomicBoolean  shouldPause = new AtomicBoolean(false); // 标志是否应暂停
     private boolean timerEnabled;
     private int timeInSeconds;
    // int successCount =0;
@@ -113,7 +115,7 @@ public class UartTestActivity extends AppCompatActivity {
             @Override
             public void run() {
                 LayoutInflater inflater = LayoutInflater.from(UartTestActivity.this);
-
+                SharedPreferences prefs = getSharedPreferences("MyPrefs", MODE_PRIVATE);
                 for (int i = 0; i < uartsToTest.size(); i ++) {
                     // 创建和初始化params变量
                     GridLayout.LayoutParams params = new GridLayout.LayoutParams();
@@ -124,6 +126,7 @@ public class UartTestActivity extends AppCompatActivity {
                     // 使用params变量
                     CheckBox checkBox = new CheckBox(UartTestActivity.this);
                     checkBox.setText(uartsToTest.get(i).getName());
+                    checkBox.setChecked(prefs.getBoolean("checkbox_state_" + i, false));
                     uartTestResultLayout.addView(checkBox, params);
                     checkBoxArrayList.add(checkBox);
 
@@ -158,6 +161,17 @@ public class UartTestActivity extends AppCompatActivity {
 
         return true;
     }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        SharedPreferences.Editor editor = getSharedPreferences("MyPrefs", MODE_PRIVATE).edit();
+        for (int i = 0; i < checkBoxArrayList.size(); i++) {
+            editor.putBoolean("checkbox_state_" + i, checkBoxArrayList.get(i).isChecked());
+        }
+        editor.apply();
+    }
+
 
     public CmdResult runCmd(String cmd, int timeout) {
         java.lang.Process process = null;
@@ -256,12 +270,10 @@ public void doTest() {
                         runOnUiThread(() -> {
 
                            if (shouldStops.get(finalI).get()) {
-                               // 测试已经失败，不再更新UI
                                return;
                            }
                             if (isSuccess ) {
-                                //if (!shouldStop.get()) {
-                                  //  successCount++;
+
                                 array[finalI]++;
                                     sendTextViewList.get(finalI).setText("发送内容：" + testString);
                                     receiveTextViewList.get(finalI).setText("接收内容：" + result.output);
@@ -269,7 +281,9 @@ public void doTest() {
                                 //}
                             } else {
                                 // 测试失败，停止测试
+                                timeDisplay.pause();
                                 shouldStops.get(finalI).set(true);
+                                shouldPause.set(true);
                                 sendTextViewList.get(finalI).setText("测试失败");
                                 receiveTextViewList.get(finalI).setText("测试失败");
                                 // 停止增加successCount
@@ -305,26 +319,6 @@ public void doTest() {
         Intent intent = getIntent();
         timerEnabled = intent.getBooleanExtra("TIMER", false);
         timeInSeconds = intent.getIntExtra("TIME_IN_SECONDS", 0);
-
-
-        if (timerEnabled) {
-            int timeInMillis = timeInSeconds * 1000;
-
-            // 启动倒计时器，定时退出
-            new Handler().postDelayed(new Runnable() {
-                @Override
-                public void run() {
-
-                    Intent resultIntent = new Intent();
-                    resultIntent.putExtra("TIMER", true);
-                    resultIntent.putExtra("TIME_IN_SECONDS", timeInSeconds);
-
-                    setResult(RESULT_OK, resultIntent);
-
-                    finish();
-                }
-            }, timeInMillis);
-        }
         getTimeTextView = findViewById(R.id.uartTimeText);
         // 初始化checkBoxArrayList
 
@@ -367,6 +361,27 @@ public void doTest() {
                 });
             }
         });
+
+        if (timerEnabled) {
+            int timeInMillis = timeInSeconds * 1000;
+            startButton.performClick();
+            // 启动倒计时器，定时退出
+            new Handler().postDelayed(new Runnable() {
+                @Override
+                public void run() {
+
+                    Intent resultIntent = new Intent();
+                    resultIntent.putExtra("TIMER", true);
+                    resultIntent.putExtra("TIME_IN_SECONDS", timeInSeconds);
+
+                    setResult(RESULT_OK, resultIntent);
+                    if (!shouldPause.get() && !isFinishing()) {
+
+                        finish();
+                    }
+                }
+            }, timeInMillis);
+        }
     }
 
     @Override

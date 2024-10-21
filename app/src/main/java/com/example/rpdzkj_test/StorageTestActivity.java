@@ -6,59 +6,25 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.Manifest;
-import android.net.wifi.WifiManager;
 import android.os.Bundle;
 import android.os.Handler;
 import android.security.keystore.StrongBoxUnavailableException;
 import android.view.KeyEvent;
 import android.view.View;
 import android.widget.Button;
-import android.widget.EditText;
 import android.widget.TextView;
-import java.io.DataOutputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileReader;
-import java.io.FileWriter;
-import android.os.CountDownTimer;
 import androidx.appcompat.app.AppCompatActivity;
 
-import androidx.annotation.Nullable;
-import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.app.ActivityCompat;
-import androidx.core.content.ContextCompat;
-import android.provider.Settings;
-import android.content.BroadcastReceiver;
-import android.content.IntentFilter;
+
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.io.IOException;
 import android.util.Log;
 import java.lang.reflect.Method;
-import java.util.Timer;
-import java.util.TimerTask;
+import java.util.concurrent.atomic.AtomicBoolean;
+
 import android.graphics.Color;
-import android.widget.NumberPicker;
-import android.widget.Toast;
 
-
-
-import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.Locale;
-import java.util.List;
-import android.content.pm.ResolveInfo;
-
-import android.net.ConnectivityManager;
-import android.widget.Toast;
-import android.net.Uri;
-import androidx.annotation.NonNull;
-import android.content.ComponentName;
-import android.content.ActivityNotFoundException;
-import java.util.ArrayList;
-import android.os.Build;
-import java.util.concurrent.TimeUnit;
 
 public class StorageTestActivity extends AppCompatActivity  {
     private static final String TAG = "StorageActivity";
@@ -79,9 +45,20 @@ public class StorageTestActivity extends AppCompatActivity  {
     private Runnable checkStorageTask;
     private boolean timerEnabled;
     private int timeInSeconds;
+    private TimeDisplay timeDisplay;
+    private TextView getTimeTextView;
     private long usedSpace = 0;
     private long totalSpace = 0;
     private Handler handler = new Handler();
+
+    private Handler thandler;
+    private Runnable trunnable;
+
+    private AtomicBoolean isTimerRunning = new AtomicBoolean(false); // 用于检查定时器状态
+    private AtomicBoolean  shouldPause = new AtomicBoolean(false); // 标志是否应暂停
+
+    private Handler monitorHandler;
+    private Runnable monitorRunnable;
 
     public void onCreate(Bundle paramBundle){
         super.onCreate(paramBundle);
@@ -99,6 +76,10 @@ public class StorageTestActivity extends AppCompatActivity  {
         sataStatusTextView = findViewById(R.id.sata_status_text_view);
         UsbStatusTextView = findViewById(R.id.usb_status_text_view);
         M2StatusTextView = findViewById(R.id.M2_status_text_view);
+
+        getTimeTextView = findViewById(R.id.testTime);
+        timeDisplay = new TimeDisplay(getTimeTextView);
+        timeDisplay.start();
 
         Intent intent = getIntent();
         timerEnabled = intent.getBooleanExtra("TIMER", false);
@@ -135,6 +116,8 @@ public class StorageTestActivity extends AppCompatActivity  {
                                 if(sderrflag)
                                 {
                                     sdTestButton.setBackgroundColor(Color.RED);
+                                    timeDisplay.pause(); // 停止时间
+                                    shouldPause.set(true);
                                 }
                                 String executionCount = getSystemProperty("rp.sdcard.rw.count");
                                 Log.d(TAG, "脚本执行次数：" + executionCount);
@@ -199,6 +182,8 @@ public class StorageTestActivity extends AppCompatActivity  {
                         if(uderrflag)
                         {
                             UsbTestButton.setBackgroundColor(Color.RED);
+                            timeDisplay.pause(); // 停止时间
+                            shouldPause.set(true);
                         }
                         String executionCount = getSystemProperty("rp.udisk.rw.count");
                         Log.d(TAG, "脚本执行次数：" + executionCount);
@@ -257,6 +242,8 @@ public class StorageTestActivity extends AppCompatActivity  {
                                 if(sterrflag)
                                 {
                                     sataTestButton.setBackgroundColor(Color.RED);
+                                    timeDisplay.pause(); // 停止时间
+                                    shouldPause.set(true);
                                 }
                                 String executionCount = getSystemProperty("rp.sata.rw.count");
                                 Log.d(TAG, "脚本执行次数：" + executionCount);
@@ -311,6 +298,8 @@ public class StorageTestActivity extends AppCompatActivity  {
                                 if(m2errflag)
                                 {
                                     M2TestButton.setBackgroundColor(Color.RED);
+                                    timeDisplay.pause(); // 停止时间
+                                    shouldPause.set(true);
                                 }
                                 String executionCount = getSystemProperty("rp.m2.rw.count");
                                 Log.d(TAG, "脚本执行次数：" + executionCount);
@@ -399,10 +388,12 @@ public class StorageTestActivity extends AppCompatActivity  {
                     Intent resultIntent = new Intent();
                     resultIntent.putExtra("TIMER", true);
                     resultIntent.putExtra("TIME_IN_SECONDS", timeInSeconds);
-
                     setResult(RESULT_OK, resultIntent);
-                    stopButton.performClick();
-                    finish();
+                    // 添加标志位检查并设置是否需要停止
+                    if (!shouldPause.get() && !isFinishing()) {
+                        stopButton.performClick();
+                        finish();
+                    }
                 }
             }, timeInMillis);
         }

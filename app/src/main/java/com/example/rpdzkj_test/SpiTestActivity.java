@@ -87,12 +87,22 @@ public class SpiTestActivity extends AppCompatActivity {
     private boolean timerEnabled;
     private int timeInSeconds;
 
+    private Handler handler;
+    private Runnable runnable;
+
+
+    private AtomicBoolean  shouldPause = new AtomicBoolean(false); // 标志是否应暂停
+
+
+    private static final String TAG = "CanTestActivity";
+
     private int  successCount = 0;
 
     private SpiTest spitest0, spitest1, spitest2;
     private TimeDisplay timeDisplay;
     private  long startTime = 0;
     private TextView getTimeTextView;
+
 
 
 
@@ -151,40 +161,42 @@ public class SpiTestActivity extends AppCompatActivity {
             startButton.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-                      timeDisplay.start();
-                    if(f00.exists()){
+                    timeDisplay.start();
+                    if(!f00.exists() && !f01.exists() && !f02.exists() )
+                    {
+                        shouldPause.set(true);
+                        timeDisplay.pause();
+                    }
+                    if (f00.exists()) {
                         String cmd = "sc16is752 -d " + "/dev/spidev0.0" + " -s " + tx + tx;
-                       // mTextViewSendContent.setText(cmd);
-                        spitest0.runCmd(cmd, 5, mTextViewSendContent ,mTextViewReceiveContent,mTextViewTestCount,isRunning0);
-                    }else {
+                        // mTextViewSendContent.setText(cmd);
+                        spitest0.runCmd(cmd, 5, mTextViewSendContent, mTextViewReceiveContent, mTextViewTestCount, isRunning0);
+                    } else {
                         mTextViewSendContent.setText("未识别到节点");
                         mTextViewReceiveContent.setText("未识别到节点");
                         mTextViewTestCount.setText("测试失败");
                     }
 
-                    if(f01.exists())
-                    {
+                    if (f01.exists()) {
                         String cmd1 = "sc16is752 -d " + "/dev/spidev1.0" + " -s " + tx + tx;
-                       // mText1ViewSendContent.setText(cmd1);
-                        spitest1.runCmd(cmd1, 5, mText1ViewSendContent,mText1ViewReceiveContent,mText1ViewTestCount,isRunning1);
+                        // mText1ViewSendContent.setText(cmd1);
+                        spitest1.runCmd(cmd1, 5, mText1ViewSendContent, mText1ViewReceiveContent, mText1ViewTestCount, isRunning1);
 
-                    }else {
+                    } else {
                         mText1ViewSendContent.setText("未识别到节点");
                         mText1ViewReceiveContent.setText("未识别到节点");
                         mText1ViewTestCount.setText("测试失败");
                     }
 
-                     if(f02.exists()){
-                         String cmd2 = "sc16is752 -d " + "/dev/spidev2.0" + " -s " + tx + tx;
+                    if (f02.exists()) {
+                        String cmd2 = "sc16is752 -d " + "/dev/spidev2.0" + " -s " + tx + tx;
                         // mText2ViewSendContent.setText(cmd2);
-                         spitest2.runCmd(cmd2, 5,mText2ViewSendContent,mText2ViewReceiveContent, mText2ViewTestCount,isRunning2);
-                     }else {
-                         mText2ViewSendContent.setText("未识别到节点");
-                         mText2ViewReceiveContent.setText("未识别到节点");
-                         mText2ViewTestCount.setText("测试失败");
-                     }
-
-
+                        spitest2.runCmd(cmd2, 5, mText2ViewSendContent, mText2ViewReceiveContent, mText2ViewTestCount, isRunning2);
+                    } else {
+                        mText2ViewSendContent.setText("未识别到节点");
+                        mText2ViewReceiveContent.setText("未识别到节点");
+                        mText2ViewTestCount.setText("测试失败");
+                    }
 
                 }
             });
@@ -203,7 +215,8 @@ public class SpiTestActivity extends AppCompatActivity {
                     resultIntent.putExtra("TIME_IN_SECONDS", timeInSeconds);
 
                     setResult(RESULT_OK, resultIntent);
-                    finish();
+                    if(! shouldPause.get())
+                    { finish();}
                 }
             }, timeInMillis);
         }
@@ -286,7 +299,6 @@ public class SpiTestActivity extends AppCompatActivity {
                             handler.postDelayed(new Runnable() {
                                 @Override
                                 public void run() {
-
                                     runOnUiThread(new Runnable() {
                                         @Override
                                         public void run() {
@@ -298,11 +310,15 @@ public class SpiTestActivity extends AppCompatActivity {
                                                 successCount++;
                                                 countTextView.setText("成功次数: " + successCount); // 更新成功次数
                                             } else if (finalExitVal == -1) {
+                                                shouldPause.set(true);
+                                                timeDisplay.pause();
                                                 sendTextView.setText("测试超时");
                                                 receiveTextView.setText(finalOutput); // 显示接收的内容
                                                 android.util.Log.d("RRRRRR", "超时");
                                                 flag.set(false);
                                             } else {
+                                                shouldPause.set(true);
+                                                timeDisplay.pause();
                                                 sendTextView.setText("测试失败");
                                                 receiveTextView.setText(finalOutput); // 显示接收的内容
                                                 android.util.Log.d("RRRRRR", "失败");

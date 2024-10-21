@@ -85,13 +85,13 @@ public class MainActivity extends AppCompatActivity {
     private Button spiButton;
 
 
+    private static final int REQUEST_CODE_0 = 0;
     private static final int REQUEST_CODE_1 = 1;
     private static final int REQUEST_CODE_2 = 2;
     private static final int REQUEST_CODE_3 = 3;
     private static final int REQUEST_CODE_4 = 4;
     private static final int REQUEST_CODE_5 = 5;
     private static final int REQUEST_CODE_6 = 6;
-    private static final int REQUEST_CODE_7 = 7;
 
 
     @Override
@@ -115,7 +115,7 @@ public class MainActivity extends AppCompatActivity {
 
 
         // 设置 NumberPicker 的最小值和最大值
-        hoursPicker.setMinValue(0);
+        hoursPicker.setMinValue(1);
         hoursPicker.setMaxValue(24);
         minutesPicker.setMinValue(0);
         minutesPicker.setMaxValue(59);
@@ -323,10 +323,10 @@ public class MainActivity extends AppCompatActivity {
                 int timeInMillis = timeInSeconds * 1000;
 
                 // Start WifiBtSwitchTestActivity with request code
-                Intent intent = new Intent(MainActivity.this, WifiBtSwitchTestActivity.class);
+                Intent intent = new Intent(MainActivity.this, UartTestActivity.class);
                 intent.putExtra("TIMER", true); // 传递是否启动定时器
                 intent.putExtra("TIME_IN_SECONDS", timeInSeconds); // 传递定时时间
-                startActivityForResult(intent, REQUEST_CODE_1);
+                startActivityForResult(intent, REQUEST_CODE_0);
 
                 // Use CountDownTimer for countdown
                 new CountDownTimer(timeInMillis, 1000) {
@@ -346,7 +346,7 @@ public class MainActivity extends AppCompatActivity {
                         secondsPicker.setValue(0);
                         autoTestButton.setEnabled(true);
                         Toast.makeText(MainActivity.this, "倒计时结束", Toast.LENGTH_SHORT).show();
-                        WifiBtButton.setBackgroundColor(Color.GREEN);
+                        uartButton.setBackgroundColor(Color.GREEN);
                         // Finish WifiBtSwitchTestActivity and return to MainActivity
                        /* Intent resultIntent = new Intent();
                         setResult(RESULT_OK, resultIntent);
@@ -362,6 +362,10 @@ public class MainActivity extends AppCompatActivity {
         stopButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                autoTestButton.setEnabled(true);
+                uartButton.setEnabled(true);
+                WifiBtButton.setEnabled(true);
+                StorageButton.setEnabled(true);
                 wifiStatusButton.setEnabled(true);
                 ethButton.setEnabled(true);
                 startTime.setEnabled(true);
@@ -393,7 +397,19 @@ public class MainActivity extends AppCompatActivity {
         }
 
         if (resultCode == RESULT_OK && data != null) {
-            if (requestCode == REQUEST_CODE_1) {
+            if (requestCode == REQUEST_CODE_0) {
+                boolean startTimer = data.getBooleanExtra("TIMER", false);
+                int timeInSeconds = data.getIntExtra("TIME_IN_SECONDS", 0);
+                if (startTimer) {
+                    Log.d("MainActivity", "WifiBt test start !!!!");
+                    Intent intent = new Intent(MainActivity.this, WifiBtSwitchTestActivity.class);
+                    intent.putExtra("TIME_IN_SECONDS", timeInSeconds);
+                    intent.putExtra("TIMER", true); // 传递是否启动定时器
+                    startActivityForResult(intent, REQUEST_CODE_1);
+                }
+            }
+           else if (requestCode == REQUEST_CODE_1) {
+               wifiStatusButton.setBackgroundColor(Color.GREEN);
                 boolean startTimer = data.getBooleanExtra("TIMER", false);
                 int timeInSeconds = data.getIntExtra("TIME_IN_SECONDS", 0);
                 if (startTimer) {
@@ -436,8 +452,9 @@ public class MainActivity extends AppCompatActivity {
                 boolean startTimer = data.getBooleanExtra("TIMER", false);
                 int timeInSeconds = data.getIntExtra("TIME_IN_SECONDS", 0);
                 if (startTimer) {
-                    Log.d("MainActivity", "Uart test start !!!!");
-                    Intent intent = new Intent(MainActivity.this, CanTestActivity.class);
+                    Log.d("MainActivity", "SPI test start !!!!");
+                   // Intent intent = new Intent(MainActivity.this, CanTestActivity.class);
+                    Intent intent = new Intent(MainActivity.this, SpiTestActivity.class);
                     intent.putExtra("TIME_IN_SECONDS", timeInSeconds);
                     intent.putExtra("TIMER", true); // 传递是否启动定时器
                     startActivityForResult(intent, REQUEST_CODE_5);
@@ -445,12 +462,13 @@ public class MainActivity extends AppCompatActivity {
             }
             else if (requestCode == REQUEST_CODE_5) {
                 Toast.makeText(MainActivity.this, "倒计时结束", Toast.LENGTH_SHORT).show();
-                canButton.setBackgroundColor(Color.GREEN);
+                spiButton.setBackgroundColor(Color.GREEN);
                 boolean startTimer = data.getBooleanExtra("TIMER", false);
                 int timeInSeconds = data.getIntExtra("TIME_IN_SECONDS", 0);
                 if (startTimer) {
                     Log.d("MainActivity", "Can test start !!!!");
-                    Intent intent = new Intent(MainActivity.this, SpiTestActivity.class);
+                   // Intent intent = new Intent(MainActivity.this, SpiTestActivity.class);
+                    Intent intent = new Intent(MainActivity.this,  CanTestActivity.class);
                     intent.putExtra("TIME_IN_SECONDS", timeInSeconds);
                     intent.putExtra("TIMER", true); // 传递是否启动定时器
                     startActivityForResult(intent, REQUEST_CODE_6);
@@ -459,7 +477,7 @@ public class MainActivity extends AppCompatActivity {
 
             else if (requestCode == REQUEST_CODE_6) {
                 Toast.makeText(MainActivity.this, "倒计时结束", Toast.LENGTH_SHORT).show();
-                spiButton.setBackgroundColor(Color.GREEN);
+                canButton.setBackgroundColor(Color.GREEN);
             //    boolean startTimer = data.getBooleanExtra("TIMER", false);
               //  int timeInSeconds = data.getIntExtra("TIME_IN_SECONDS", 0);
              /*   if (startTimer) {
