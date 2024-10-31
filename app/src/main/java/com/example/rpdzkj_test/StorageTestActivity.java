@@ -51,14 +51,10 @@ public class StorageTestActivity extends AppCompatActivity  {
     private long totalSpace = 0;
     private Handler handler = new Handler();
 
-    private Handler thandler;
-    private Runnable trunnable;
-
     private AtomicBoolean isTimerRunning = new AtomicBoolean(false); // 用于检查定时器状态
     private AtomicBoolean  shouldPause = new AtomicBoolean(false); // 标志是否应暂停
 
-    private Handler monitorHandler;
-    private Runnable monitorRunnable;
+
 
     public void onCreate(Bundle paramBundle){
         super.onCreate(paramBundle);
@@ -215,9 +211,6 @@ public class StorageTestActivity extends AppCompatActivity  {
                 sataTestButton.setEnabled(false);
                 sataTestButton.setBackgroundColor(Color.LTGRAY);
                 setSystemProperty("sata_test",  "1");
-
-
-
                 // 添加延迟
                 handler.postDelayed(new Runnable() {
                     @Override
@@ -376,15 +369,27 @@ public class StorageTestActivity extends AppCompatActivity  {
 
         if (timerEnabled) {
             int timeInMillis = timeInSeconds * 1000;
-            sdTestButton.performClick();
-            UsbTestButton.performClick();
-            sataTestButton.performClick();
-            M2TestButton.performClick();
+            stopButton.performClick();
+            try {
+                Thread.sleep(1000);
+                sdTestButton.performClick();
+
+                Thread.sleep(1000);
+                UsbTestButton.performClick();
+
+                Thread.sleep(1000);
+                sataTestButton.performClick();
+
+                Thread.sleep(1000);
+                M2TestButton.performClick();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+
             // 启动倒计时器，定时退出
             new Handler().postDelayed(new Runnable() {
                 @Override
                 public void run() {
-
                     Intent resultIntent = new Intent();
                     resultIntent.putExtra("TIMER", true);
                     resultIntent.putExtra("TIME_IN_SECONDS", timeInSeconds);

@@ -142,6 +142,15 @@ public class CanTestActivity extends AppCompatActivity {
                     for (String canFile : canFiles) {
                         checkCanFile(canFile);
                     }
+                    if(canTotal == 0)
+                    {
+                        Intent resultIntent = new Intent();
+                        resultIntent.putExtra("NODE_NOT_EXIST", true);
+                        resultIntent.putExtra("TIMER", true);
+                        resultIntent.putExtra("TIME_IN_SECONDS", timeInSeconds);
+                        setResult(RESULT_OK, resultIntent);
+                        {finish();}
+                    }
                     ((TextView) findViewById(R.id.canString)).setText(canTotal == 0 ? "检测CAN数为0,退出测试" : "当前CAN设备数量为： " + canTotal);
 
             }
@@ -159,7 +168,7 @@ public class CanTestActivity extends AppCompatActivity {
                     resultIntent.putExtra("TIME_IN_SECONDS", timeInSeconds);
                     setResult(RESULT_OK, resultIntent);
                     if( !shouldPause.get())
-                    finish();
+                    {finish();}
                 }
             };
 

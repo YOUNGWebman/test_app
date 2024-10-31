@@ -1,0 +1,303 @@
+package com.example.rpdzkj_test;
+import android.os.Bundle;
+import android.os.Handler;
+import android.util.Log;
+import android.widget.Button;
+import android.widget.CheckBox;
+import android.widget.GridLayout;
+import android.widget.TextView;
+import androidx.appcompat.app.AppCompatActivity;
+import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import android.serialport.SerialPort;
+import java.io.InputStream;
+import java.io.OutputStream;
+import android.widget.EditText;
+import android.widget.LinearLayout;
+
+
+/*public class UartTestActivity extends AppCompatActivity {
+    private GridLayout checkboxLayout;
+    private Button startButton;
+    private List<CheckBox> checkBoxList = new ArrayList<>();
+    private List<TextView> sendTextViewList = new ArrayList<>();
+    private List<TextView> receiveTextViewList = new ArrayList<>();
+    private List<TextView> receiveCountTextViewList = new ArrayList<>();
+    private static final int BAUD_RATE = 115200; // 默认波特率
+    private Handler handler = new Handler();
+    private List<Boolean> isTestFailedList = new ArrayList<>();
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_uart_test);
+
+        checkboxLayout = findViewById(R.id.checkbox_layout);
+        checkboxLayout.setColumnCount(4); // 设置列数为4
+
+        startButton = findViewById(R.id.start_button);
+
+        // 获取 /dev 目录下的 ttyS 节点
+        List<String> ttySNodes = getTtySNodes();
+
+        // 动态生成复选框和 TextView
+        for (String node : ttySNodes) {
+            LinearLayout itemLayout = new LinearLayout(this);
+            itemLayout.setOrientation(LinearLayout.VERTICAL);
+
+            CheckBox checkBox = new CheckBox(this);
+            checkBox.setText(node);
+            itemLayout.addView(checkBox);
+            checkBoxList.add(checkBox);
+
+            TextView sendTextView = new TextView(this);
+            sendTextView.setText("Sending: ");
+            itemLayout.addView(sendTextView);
+            sendTextViewList.add(sendTextView);
+
+            TextView receiveTextView = new TextView(this);
+            receiveTextView.setText("Receiving: ");
+            itemLayout.addView(receiveTextView);
+            receiveTextViewList.add(receiveTextView);
+
+            TextView receiveCountTextView = new TextView(this);
+            receiveCountTextView.setText("Receive Count: 0");
+            itemLayout.addView(receiveCountTextView);
+            receiveCountTextViewList.add(receiveCountTextView);
+
+            GridLayout.LayoutParams layoutParams = new GridLayout.LayoutParams();
+            layoutParams.setMargins(40, 0, 40, 0); // 左右边距40dp
+            itemLayout.setLayoutParams(layoutParams);
+
+            checkboxLayout.addView(itemLayout);
+            isTestFailedList.add(false); // 初始化失败标志位列表
+        }
+
+        // 设置 Start 按钮的点击事件
+        startButton.setOnClickListener(v -> {
+            // 执行选中的 ttyS 节点的循环自发自收测试
+            for (int i = 0; i < checkBoxList.size(); i++) {
+                CheckBox checkBox = checkBoxList.get(i);
+                if (checkBox.isChecked()) {
+                    String node = checkBox.getText().toString();
+                    TextView sendTextView = sendTextViewList.get(i);
+                    TextView receiveTextView = receiveTextViewList.get(i);
+                    TextView receiveCountTextView = receiveCountTextViewList.get(i);
+                    performUartTest(node, sendTextView, receiveTextView, receiveCountTextView, i);
+                }
+            }
+        });
+    }
+
+    private List<String> getTtySNodes() {
+        List<String> ttySNodes = new ArrayList<>();
+        File devDirectory = new File("/dev");
+        File[] files = devDirectory.listFiles();
+        if (files != null) {
+            for (File file : files) {
+                if (file.getName().startsWith("ttyS")) {
+                    ttySNodes.add(file.getAbsolutePath());
+                }
+            }
+        }
+        return ttySNodes;
+    }
+
+    private void performUartTest(String node, TextView sendTextView, TextView receiveTextView, TextView receiveCountTextView, int index) {
+        Thread sendThread = new Thread(() -> {
+            try {
+                File device = new File(node);
+                int baudrate = BAUD_RATE; // 115200
+                SerialPort serialPort = new SerialPort(device, baudrate);
+                InputStream fis = serialPort.getInputStream();
+                OutputStream fos = serialPort.getOutputStream();
+                byte[] sendBuffer = "Test Data".getBytes(); // 要发送的数据
+
+                final int[] receiveCount = {0}; // 使用数组来存储接收计数
+                byte[] receiveBuffer = new byte[1024];
+                int bytesRead;
+                final long[] lastReceivedTime = {System.currentTimeMillis()}; // 使用数组来存储最后接收时间
+
+                // 不断发送数据的循环
+                Thread sendLoopThread = new Thread(() -> {
+                    try {
+                        while (!isTestFailedList.get(index)) {
+                            fos.write(sendBuffer); // 发送数据
+                            handler.post(() -> {
+                                sendTextView.setText("Sending: Test Data");
+                                Log.d("UartTest", "Data sent to " + node);
+                            });
+                            Thread.sleep(1000); // 每秒发送一次
+                        }
+                    } catch (IOException | InterruptedException e) {
+                        e.printStackTrace();
+                        handler.post(() -> Log.e("UartTest", "Error testing UART " + node, e));
+                    }
+                });
+                sendLoopThread.start();
+
+                while (!isTestFailedList.get(index) && (bytesRead = fis.read(receiveBuffer)) != -1) {
+                    final String receivedData = new String(receiveBuffer, 0, bytesRead);
+                    lastReceivedTime[0] = System.currentTimeMillis();
+
+                    receiveCount[0]++;
+                    handler.post(() -> {
+                        receiveTextView.setText("Receiving: " + receivedData);
+                        receiveCountTextView.setText("Receive Count: " + receiveCount[0]);
+                        Log.d("UartTest", "Data received from " + node + ": " + receivedData);
+                    });
+                }
+
+                // 检查超时机制
+                Thread timeoutThread = new Thread(() -> {
+                    try {
+                        while (!isTestFailedList.get(index)) {
+                            if (System.currentTimeMillis() - lastReceivedTime[0] > 5000) { // 超时5秒
+                                isTestFailedList.set(index, true);
+                                handler.post(() -> {
+                                    receiveTextView.setText("Receiving: 测试失败");
+                                });
+                                break;
+                            }
+                            Thread.sleep(1000); // 每秒检查一次
+                        }
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                });
+                timeoutThread.start();
+
+                sendLoopThread.join();
+                timeoutThread.join();
+
+                fis.close();
+                fos.close();
+            } catch (IOException | InterruptedException e) {
+                e.printStackTrace();
+                handler.post(() -> Log.e("UartTest", "Error testing UART " + node, e));
+            }
+        });
+        sendThread.start();
+    }
+} */
+public class UartTestActivity extends AppCompatActivity {
+    private EditText[] nodeEditTexts = new EditText[5];
+    private CheckBox[] checkBoxes = new CheckBox[5];
+    private TextView[] sendTextViews = new TextView[5];
+    private TextView[] receiveTextViews = new TextView[5];
+    private TextView[] receiveCountTextViews = new TextView[5];
+    private Button startButton;
+    private Handler handler = new Handler();
+    private Boolean[] isTestFailed = new Boolean[5];
+    private static final int BAUD_RATE = 115200;
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_uart_test);
+
+        for (int i = 0; i < 5; i++) {
+            String editTextID = "node_edit_text_" + (i + 1);
+            String checkBoxID = "check_box_" + (i + 1);
+            String sendTextViewID = "send_text_view_" + (i + 1);
+            String receiveTextViewID = "receive_text_view_" + (i + 1);
+            String receiveCountTextViewID = "receive_count_text_view_" + (i + 1);
+
+            int resEditTextID = getResources().getIdentifier(editTextID, "id", getPackageName());
+            int resCheckBoxID = getResources().getIdentifier(checkBoxID, "id", getPackageName());
+            int resSendTextViewID = getResources().getIdentifier(sendTextViewID, "id", getPackageName());
+            int resReceiveTextViewID = getResources().getIdentifier(receiveTextViewID, "id", getPackageName());
+            int resReceiveCountTextViewID = getResources().getIdentifier(receiveCountTextViewID, "id", getPackageName());
+
+            nodeEditTexts[i] = findViewById(resEditTextID);
+            checkBoxes[i] = findViewById(resCheckBoxID);
+            sendTextViews[i] = findViewById(resSendTextViewID);
+            receiveTextViews[i] = findViewById(resReceiveTextViewID);
+            receiveCountTextViews[i] = findViewById(resReceiveCountTextViewID);
+
+            isTestFailed[i] = false;
+        }
+
+        startButton = findViewById(R.id.start_button);
+        startButton.setOnClickListener(v -> {
+            for (int i = 0; i <5; i++) {
+                if (checkBoxes[i].isChecked()) {
+                    String node = nodeEditTexts[i].getText().toString();
+                    if (!node.isEmpty()) {
+                        performUartTest(i, node, sendTextViews[i], receiveTextViews[i], receiveCountTextViews[i]);
+                    }
+                }
+            }
+        });
+    }
+
+    private void performUartTest(int index, String node, TextView sendTextView, TextView receiveTextView, TextView receiveCountTextView) {
+        new Thread(() -> {
+            try {
+                File device = new File("/dev/" + node);
+                int baudrate = BAUD_RATE;
+                SerialPort serialPort = new SerialPort(device, baudrate);
+                InputStream fis = serialPort.getInputStream();
+                OutputStream fos = serialPort.getOutputStream();
+                byte[] sendBuffer = "Test Data".getBytes();
+
+                final int[] receiveCount = {0};
+                byte[] receiveBuffer = new byte[1024];
+                int bytesRead;
+                final long[] lastReceivedTime = {System.currentTimeMillis()};
+
+                new Thread(() -> {
+                    try {
+                        while (!isTestFailed[index]) {
+                            fos.write(sendBuffer);
+                            handler.post(() -> {
+                                sendTextView.setText("Sending: Test Data");
+                            });
+                            Thread.sleep(1000);
+                        }
+                    } catch (IOException | InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                }).start();
+
+                while (!isTestFailed[index] && (bytesRead = fis.read(receiveBuffer)) != -1) {
+                    final String receivedData = new String(receiveBuffer, 0, bytesRead);
+                    lastReceivedTime[0] = System.currentTimeMillis();
+
+                    if (!isTestFailed[index]) {
+                        receiveCount[0]++;
+                        handler.post(() -> {
+                            receiveTextView.setText("Receiving: " + receivedData);
+                            receiveCountTextView.setText("Receive Count: " + receiveCount[0]);
+                        });
+                    }
+                }
+
+                new Thread(() -> {
+                    try {
+                        while (true) {
+                            if (System.currentTimeMillis() - lastReceivedTime[0] > 5000) {
+                                isTestFailed[index] = true;
+                                handler.post(() -> {
+                                    receiveTextView.setText("Receiving: 测试失败");
+                                });
+                                break;
+                            }
+                            Thread.sleep(1000);
+                        }
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                }).start();
+
+                fis.close();
+                fos.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }).start();
+    }
+}
+

@@ -61,6 +61,7 @@ public class UartTestActivity extends AppCompatActivity {
     private AtomicBoolean  shouldPause = new AtomicBoolean(false); // 标志是否应暂停
     private boolean timerEnabled;
     private int timeInSeconds;
+    private Button startButton;
    // int successCount =0;
    int[] array = new int[10]; // Java中的数组默认初始化为0
     private TimeDisplay timeDisplay;
@@ -299,6 +300,89 @@ public void doTest() {
 
         executor.shutdown();
     }
+/*public void doTest() {
+    // 创建固定大小的线程池
+    executor = Executors.newFixedThreadPool(10);
+    String str = "0123";
+    final String testString = str + str;
+    String uartSettings = "fffffff4:4:1cb2:a30:3:1c:7f:15:4:0:1:0:11:13:1a:0:12:f:17:16:0:0:0";
+
+    for (int i = 0; i < checkBoxArrayList.size(); i++) {
+        CheckBox checkBox = checkBoxArrayList.get(i);
+        if (checkBox.isChecked()) {
+            File uart = uartsToTest.get(i);
+            Log.d("RRRRR do uart", uart.getName());
+            final int finalI = i;
+
+            // 提交任务给线程池
+            Future<?> future = executor.submit(new Runnable() {
+                @Override
+                public void run() {
+                    CmdResult result;
+                    String testFilePath0 = "/data/";
+                    upgradeRootPermission(testFilePath0);
+                    String testFilePath = testFilePath0 + uart.getName() + ".txt";
+                    upgradeRootPermission(testFilePath);
+                    String cmdTouch = String.format("touch %s \n", testFilePath);
+                    String cmd0 = String.format("stty -F %s %s \n", uart.getAbsolutePath(), uartSettings);
+                    String cmd1 = String.format("cat %s > %s &\n", uart.getAbsolutePath(), testFilePath);
+                    String cmdW = String.format("echo \"%s\" > %s \n", testString, uart.getAbsolutePath());
+                    String cmdR = String.format("cat %s \n", testFilePath);
+                    String cmdRM = String.format("rm %s \n", testFilePath);
+                    String cmdClean = "killall cat\n";
+
+                    try {
+                        runCmd(cmdTouch, 1);
+                        runCmd(cmd0, 1);
+                        runCmd(cmd1, 1);
+                        Thread.sleep(300); // 延时300毫秒
+                        runCmd(cmdW, 1);
+                        Thread.sleep(300); // 延时300毫秒
+                        result = runCmd(cmdR, 1);
+                        boolean isSuccess = testString.equals(result.output);
+                        runCmd(cmdRM, 1);
+                        runCmd(cmdClean, 1);
+
+                        Log.d("RRRRRR result ", uart.getName() + " " + result.output);
+
+                        runOnUiThread(() -> {
+                            if (shouldStops.get(finalI).get()) {
+                                return;
+                            }
+                            if (isSuccess) {
+                                array[finalI]++;
+                                sendTextViewList.get(finalI).setText("发送内容：" + testString);
+                                receiveTextViewList.get(finalI).setText("接收内容：" + result.output);
+                                countTextViewList.get(finalI).setText("测试次数：" + array[finalI]);
+                            } else {
+                                // 测试失败，停止测试
+                                timeDisplay.pause();
+                                shouldStops.get(finalI).set(true);
+                                shouldPause.set(true);
+                                sendTextViewList.get(finalI).setText("测试失败");
+                                receiveTextViewList.get(finalI).setText("测试失败");
+                                // 停止增加successCount
+                                executor.shutdownNow();
+                                Thread.currentThread().interrupt();
+                            }
+                        });
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                        e.printStackTrace();
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    } finally {
+                        // 确保在任务完成后关闭executor
+                        if (executor != null && !executor.isShutdown()) {
+                            executor.shutdown();
+                        }
+                    }
+                }
+            });
+        }
+    }
+    executor.shutdown();
+} */
 
     public class CmdResult {
         CmdResult(int exitVal, String output) {
@@ -337,7 +421,7 @@ public void doTest() {
         int screenWidth = displayMetrics.widthPixels;
         width = (screenWidth / col - 2 * margin);
         initTest();
-        Button startButton = findViewById(R.id.startButton);
+        startButton = findViewById(R.id.startButton);
         startButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -364,7 +448,25 @@ public void doTest() {
 
         if (timerEnabled) {
             int timeInMillis = timeInSeconds * 1000;
-            startButton.performClick();
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    new Handler().postDelayed(new Runnable() {
+                        @Override
+                        public void run() {
+                            try {
+                                Thread.sleep(1000);
+                                startButton.performClick();
+                            } catch (InterruptedException e) {
+                                e.printStackTrace();
+                            }
+
+                        }
+                    }, 1000); // 延时100毫秒，确保前置操作完成
+                }
+            });
+
+
             // 启动倒计时器，定时退出
             new Handler().postDelayed(new Runnable() {
                 @Override
@@ -395,12 +497,35 @@ public void doTest() {
         return super.dispatchKeyEvent(event);
     }
 
+
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        terminateAllCatProcesses();
-        timeDisplay.stop();
+        // 停止后台任务
+        stopBackgroundTask();
+        // 检查并关闭线程池
+        if (executor != null && !executor.isShutdown()) {
+            executor.shutdown();
+        }
+        // 等待所有任务终止
+        try {
+            if (executor != null && !executor.awaitTermination(10, TimeUnit.SECONDS)) {
+                executor.shutdownNow();
+            }
+        } catch (InterruptedException e) {
+            executor.shutdownNow();
+        }
     }
+
+    private void stopBackgroundTask() {
+        // 检查是否有未完成的任务并取消
+        if (executor != null && !executor.isShutdown()) {
+            executor.shutdownNow();
+        }
+    }
+
+
+
     public void terminateAllCatProcesses() {
         try {
             Runtime.getRuntime().exec("killall cat");

@@ -4,11 +4,21 @@
     android:layout_height="match_parent">
 
     <TextView
+        android:id="@+id/wifi_test"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="wifi稳定性测试"
+        android:textSize="20sp"
+        android:layout_marginTop="330dp"
+        android:layout_marginLeft="10dp"
+        />
+
+    <TextView
         android:id="@+id/wifi_network_status_text_view"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="1dp"
-        android:layout_marginLeft="70dp"
+        android:layout_marginTop="10dp"
+        android:layout_marginLeft="50dp"
         android:text="wifi_test："
         android:textSize="20sp" />
 

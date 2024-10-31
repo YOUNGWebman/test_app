@@ -8,7 +8,6 @@ import android.os.Bundle;
 import android.os.Handler;
 
 import android.os.SystemClock;
-import android.view.KeyEvent;
 import android.widget.TextView;
 
 import androidx.appcompat.app.AppCompatActivity;
@@ -31,9 +30,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import android.net.NetworkRequest;
 import android.net.NetworkCapabilities;
 import android.net.Network;
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
-import android.widget.Toast;
+
 
 
 public class NetworkTestActivity extends AppCompatActivity {
@@ -43,26 +40,11 @@ public class NetworkTestActivity extends AppCompatActivity {
     private Runnable runnable, runnable1, runnable2;
     private Handler handler = new Handler(), handler1 = new Handler(), handler2 = new Handler();
     private NetworkTest networkTest, networkTest1, networkTest2;
-    private boolean timerEnabled;
-    private int timeInSeconds;
-
-    private Handler thandler;
-    private Runnable trunnable;
-
-    private AtomicBoolean  isTimerRunning = new AtomicBoolean(false); // 用于检查定时器状态
-    private AtomicBoolean  shouldPause = new AtomicBoolean(false); // 标志是否应暂停
-
-    private Handler monitorHandler;
-    private Runnable monitorRunnable;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_network_test);
-        Intent intent = getIntent();
-        timerEnabled = intent.getBooleanExtra("TIMER", false);
-        timeInSeconds = intent.getIntExtra("TIME_IN_SECONDS", 0);
-
         networkStatusTextView = findViewById(R.id.ethnetwork_status_text_view);
         networkStatusTextView1 = findViewById(R.id.ethnetwork1_status_text_view);
         networkStatusTextView2 = findViewById(R.id.ethnetwork2_status_text_view);
@@ -72,6 +54,12 @@ public class NetworkTestActivity extends AppCompatActivity {
         AtomicBoolean isRunning1 = new AtomicBoolean(false);
         AtomicBoolean isRunning2 = new AtomicBoolean(false);
 
+        // 初始化isStoped
+ /*       AtomicBoolean isStoped0 = new AtomicBoolean(false);
+        AtomicBoolean isStoped1= new AtomicBoolean(false);
+        AtomicBoolean isStoped2 = new AtomicBoolean(false);
+
+  */
 
         // 为每个网络接口创建NetworkTest对象
         networkTest = new NetworkTest("eth0", handler, networkStatusTextView, this,  isRunning0);
@@ -87,41 +75,10 @@ public class NetworkTestActivity extends AppCompatActivity {
         connectivityManager.registerNetworkCallback(networkRequest, networkTest1.networkCallback);
         connectivityManager.registerNetworkCallback(networkRequest, networkTest2.networkCallback);
 
+        // 开始测试
         networkTest.start();
         networkTest1.start();
         networkTest2.start();
-
-        if (timerEnabled) {
-            int timeInMillis = timeInSeconds * 1000;
-
-            // 启动倒计时器，定时退出
-            new Handler().postDelayed(new Runnable() {
-                @Override
-                public void run() {
-
-                    Intent resultIntent = new Intent();
-                    resultIntent.putExtra("TIMER", true);
-                    resultIntent.putExtra("TIME_IN_SECONDS", timeInSeconds);
-
-                    setResult(RESULT_OK, resultIntent);
-                    if( ! shouldPause.get())
-                    { finish();}
-                }
-            }, timeInMillis);
-        }
-
-    }
-
-    @Override
-    public boolean dispatchKeyEvent(KeyEvent event) {
-        if (event.getKeyCode() == KeyEvent.KEYCODE_BACK && event.getAction() == KeyEvent.ACTION_DOWN) {
-            Intent intent = new Intent(NetworkTestActivity.this, MainActivity.class);
-            setResult(RESULT_OK, intent); // 返回结果
-          // if(! shouldPause.get())
-            { finish(); }// 确保调用 finish() 方法
-            return true;
-        }
-        return super.dispatchKeyEvent(event);
     }
 
     @Override
@@ -147,7 +104,8 @@ public class NetworkTestActivity extends AppCompatActivity {
         private ConnectivityManager.NetworkCallback networkCallback;
         private Network currentNetwork;
         private AtomicBoolean networkLost = new AtomicBoolean(false);
-
+       // private Runnable runnable;
+       // private AtomicBoolean isStopped = new AtomicBoolean(false);
 
 
         public NetworkTest(String interfaceName, Handler handler, TextView networkStatusTextView, Context context, AtomicBoolean isRunning) {
@@ -157,9 +115,26 @@ public class NetworkTestActivity extends AppCompatActivity {
             this.startTime = SystemClock.elapsedRealtime();
             this.context = context;
             this.isRunning = isRunning;
-
+      //      this.isStopped = isStopped;
             this.networkCallback = new ConnectivityManager.NetworkCallback() {
+           /*     @Override
+                public void onAvailable(Network network) {
+                    NetworkInterface networkInterface = getNetworkInterface(network);
+                    if (networkInterface != null && networkInterface.getName().equals(interfaceName)) {
+                        if(isStopped.get())
+                        {
+                            return;
+                        }
+                        currentNetwork = network;
+                        if (!isRunning.get()) {
+                            isRunning.set(true);
+                            shouldStop.set(false);
+                            startTime = System.currentTimeMillis();
 
+                            handler.post(runnable);
+                        }
+                    }
+                } */
 
                 @Override
                 public void onLost(Network network) {
@@ -171,8 +146,7 @@ public class NetworkTestActivity extends AppCompatActivity {
                             shouldStop.set(true);
                             networkLost.set(true);
                           //  isStopped.set(true);
-                            isTimerRunning.set(true);
-                            networkStatusTextView.setText("测试失败!!" + "\nDuration:" + lastRecord);
+                            networkStatusTextView.setText("测试失败" + "\nDuration:" + lastRecord);
                             Log.d("NetworkTest", "Interface disconnected: " + interfaceName);
                         }
                     }
@@ -211,16 +185,11 @@ public class NetworkTestActivity extends AppCompatActivity {
                                     return;
                                 }
                                 Log.d("NetworkTestIP0", "Interface " + interfaceName );
-                                if (NetworkUtils.isSpecificInterfaceAvailable(interfaceName) == false) {
-
-                                    isRunning.set(false);
-                                    return;
-                                }
+                           //     if (!NetworkUtils.isInterfaceConnected(interfaceName, context))
                                     if (NetworkUtils.getNetWorkIp(interfaceName) == null)
                                 {
                                     networkStatusTextView.setText("测试失败" + "\nDuration:" + lastRecord);
                                     isRunning.set(false);
-                                    shouldPause.set(true);
                                     Log.d("NetworkTestIP", "Interface " + interfaceName + " is not connected");
                                     return;
                                 }
@@ -229,23 +198,21 @@ public class NetworkTestActivity extends AppCompatActivity {
                                 Log.d("NetworkTest", "Interface: " + interfaceName + ", IP: " + ip);
                                 final String pingResult = NetworkUtils.ping("www.qq.com");
 
-                     runOnUiThread(new Runnable() {
+                                runOnUiThread(new Runnable() {
                                     @Override
                                     public void run() {
                                         //if (!isRunning.get() || shouldStop.get() || networkLost.get())
                                             if (!isRunning.get() )
                                             {
-                                                shouldPause.set(true);
                                                 return;
                                             }
-                                            if(shouldStop.get())
+                                            if(shouldStop.get() )
 
                                         {
-                                            Log.d("NetworkTestIP0", "Interface ping failed" );
                                             networkStatusTextView.setText("测试失败1" + "\nDuration:" + lastRecord);
+                                          //  isStopped.set(true);
                                             shouldStop.set(true);
                                             isRunning.set(false);
-                                            isTimerRunning.set(true);
                                             return;
                                         }
                                         long currentTime = SystemClock.elapsedRealtime();
@@ -271,8 +238,112 @@ public class NetworkTestActivity extends AppCompatActivity {
     }
 
 
-    public static class NetworkUtils {
 
+
+
+
+  /*  public class NetworkTest {
+        private String interfaceName;
+        private Handler handler;
+        private TextView networkStatusTextView;
+        private long startTime;
+        private AtomicBoolean shouldStop = new AtomicBoolean(false);
+        private boolean isRunning = false;
+        private double lastRecordedTime = 0;
+        private Context context;
+        private ConnectivityManager.NetworkCallback networkCallback;  // 新增
+
+        public NetworkTest(String interfaceName, Handler handler, TextView networkStatusTextView, Context context) {
+            this.interfaceName = interfaceName;
+            this.handler = handler;
+            this.networkStatusTextView = networkStatusTextView;
+            this.startTime = System.currentTimeMillis();
+            this.context = context;
+            this.networkCallback = new ConnectivityManager.NetworkCallback() {  // 新增
+                @Override
+                public void onAvailable(Network network) {
+                    // 网络连接可用时调用
+                    Log.d("NetworkTest", "Network is available");
+                    if (!isRunning) {
+                        isRunning = true;
+                        shouldStop.set(false);  // 允许新线程
+                        startTime = System.currentTimeMillis();  // 重新开始计时
+                        handler.post(runnable);  // 重新开始Runnable
+                    }
+                }
+
+                @Override
+                public void onLost(Network network) {
+                    // 网络连接丢失时调用
+                    Log.d("NetworkTest", "Network is lost");
+                    isRunning = false;
+                    handler.removeCallbacks(runnable);  // 停止Runnable
+                    shouldStop.set(true);  // 停止新线程
+                    // 更新UI
+                    networkStatusTextView.setText("测试失败" + "\nDuration:" + lastRecordedTime + " s");
+                    // 打印当前的interfaceName
+                    Log.d("NetworkTest", "Interface disconnected: " + interfaceName);
+                }
+            };
+        }
+
+        public void start() {
+            if (!isRunning) {
+                isRunning = true;
+                Runnable runnable = new Runnable() {
+                    @Override
+                    public void run() {
+                        if (!isRunning) {
+                            Log.d("NetworkTest", "Not running");
+                            return;
+                        }
+
+                        new Thread(new Runnable() {
+                            @Override
+                            public void run() {
+                                if (shouldStop.get()) {
+                                    return;
+                                }
+
+                                // 检查网络接口是否已经启动
+                                if (!NetworkUtils.isInterfaceConnected(interfaceName, context)) {
+                                    Log.d("NetworkTest", "Interface " + interfaceName + " is not connected");
+                                    return;
+                                }
+
+                                final String ip = NetworkUtils.getNetWorkIp(interfaceName);
+                                Log.d("NetworkTest", "ip" + interfaceName);
+                                final String pingResult = NetworkUtils.ping("www.qq.com");
+
+                                // 在主线程中更新TextView
+                                runOnUiThread(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        if (!isRunning || shouldStop.get()) {
+                                            networkStatusTextView.setText("测试失败" + "\nDuration:" + lastRecordedTime + " s");
+                                            isRunning = false;
+                                            return;
+                                        }
+                                        long currentTime = System.currentTimeMillis();
+                                        long duration = currentTime - startTime;
+                                        double durationInSeconds = duration / 1000.0;
+                                        lastRecordedTime = durationInSeconds;  // 更新lastRecordedTime的值
+                                        networkStatusTextView.setText("IP: " + ip + "\nPing result: " + pingResult + "\nDuration: " + durationInSeconds + " s");
+                                    }
+                                });
+                            }
+                        }).start();
+
+                        // 每0.5秒执行一次
+                        handler.postDelayed(this, 500);
+                    }
+                };
+                handler.post(runnable);
+            }
+        }
+    }  */
+
+    public static class NetworkUtils {
         public static String getNetWorkIp(String interfaceName) {
             try {
                 List<NetworkInterface> interfaces = Collections.list(NetworkInterface.getNetworkInterfaces());
@@ -300,6 +371,7 @@ public class NetworkTestActivity extends AppCompatActivity {
 
         public static String ping(String url) {
             String pingResult = "";
+
             try {
                 Process process = Runtime.getRuntime().exec("/system/bin/ping -c 1 " + url);
                 BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
@@ -322,7 +394,7 @@ public class NetworkTestActivity extends AppCompatActivity {
             NetworkInfo activeNetwork = cm.getActiveNetworkInfo();
             return activeNetwork != null && activeNetwork.isConnected();
         }
-        public static boolean isInterfaceConnected(String interfaceName) {
+        public static boolean isInterfaceConnected(String interfaceName, Context context) {
             try {
                 NetworkInterface networkInterface = NetworkInterface.getByName(interfaceName);
                 return networkInterface != null && networkInterface.isUp();
@@ -331,66 +403,6 @@ public class NetworkTestActivity extends AppCompatActivity {
                 return false;
             }
         }
-
-
-
-
-
-        public static boolean isSpecificInterfaceAvailable(String interfaceName) {
-            try {
-                // 运行 ifconfig 命令
-                Process process = Runtime.getRuntime().exec("ifconfig");
-                BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
-                String line;
-                StringBuilder output = new StringBuilder();
-
-                // 读取命令输出
-                while ((line = reader.readLine()) != null) {
-                    output.append(line).append("\n");
-                }
-
-                // 解析输出，打印所有接口名
-                String[] interfaces = output.toString().split("\n\n"); // 按空行分隔接口信息
-                System.out.println("All interface names found:");
-                for (String intf : interfaces) {
-                    String[] lines = intf.trim().split("\n");
-                    if (lines.length > 0) {
-                        String interfaceNameLine = lines[0].split("\\s+")[0];
-                        System.out.println(interfaceNameLine); // 只打印接口名
-                        if (interfaceNameLine.equalsIgnoreCase(interfaceName)) {
-                            Log.d("NetworkTestIP0", "Interface exist!!!!");
-                            return true;
-                        }
-                    }
-                }
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-            Log.d("NetworkTestIP0", "Interface not exist!!!!");
-            return false;
-        }
-
-
-
-       /* public static boolean isSpecificInterfaceAvailable(String interfaceName) {
-            try {
-                List<NetworkInterface> interfaces = Collections.list(NetworkInterface.getNetworkInterfaces());
-                System.out.println("Total interfaces found: " + interfaces.size()); // 打印接口总数
-                for (NetworkInterface intf : interfaces) {
-                    System.out.println("Interface name: " + intf.getName() + ", Is Up: " + intf.isUp()); // 打印接口名和状态
-                    if (intf.getName().equalsIgnoreCase(interfaceName)) {
-                        Log.d("NetworkTestIP0", "Interface exist!!!!" );
-                        return true;
-                    }
-                }
-            } catch (SocketException e) {
-                e.printStackTrace();
-            }
-            Log.d("NetworkTestIP0", "Interface not exist!!!!" );
-            return false;
-        } */
-
-
     }
 }
 

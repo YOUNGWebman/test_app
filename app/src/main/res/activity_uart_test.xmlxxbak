@@ -1,0 +1,210 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".UartTestActivity">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <!-- 节点1 -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <CheckBox
+                android:id="@+id/check_box_1"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Node 1"/>
+
+            <EditText
+                android:id="@+id/node_edit_text_1"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:hint="/dev/"/>
+
+            <TextView
+                android:id="@+id/send_text_view_1"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Sending: "/>
+
+            <TextView
+                android:id="@+id/receive_text_view_1"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Receiving: "/>
+
+            <TextView
+                android:id="@+id/receive_count_text_view_1"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Receive Count: 0"/>
+        </LinearLayout>
+
+        <!-- 重复以上布局，共10个节点 -->
+
+        <!-- 节点2 -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <CheckBox
+                android:id="@+id/check_box_2"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Node 2"/>
+
+            <EditText
+                android:id="@+id/node_edit_text_2"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:hint="/dev/"/>
+
+            <TextView
+                android:id="@+id/send_text_view_2"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Sending: "/>
+
+            <TextView
+                android:id="@+id/receive_text_view_2"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Receiving: "/>
+
+            <TextView
+                android:id="@+id/receive_count_text_view_2"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Receive Count: 0"/>
+        </LinearLayout>
+
+        <!-- 节点3 -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <CheckBox
+                android:id="@+id/check_box_3"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Node 3"/>
+
+            <EditText
+                android:id="@+id/node_edit_text_3"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:hint="/dev/"/>
+
+            <TextView
+                android:id="@+id/send_text_view_3"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Sending: "/>
+
+            <TextView
+                android:id="@+id/receive_text_view_3"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Receiving: "/>
+
+            <TextView
+                android:id="@+id/receive_count_text_view_3"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Receive Count: 0"/>
+        </LinearLayout>
+
+        <!-- 节点4 -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <CheckBox
+                android:id="@+id/check_box_4"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Node 4"/>
+
+            <EditText
+                android:id="@+id/node_edit_text_4"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:hint="/dev/"/>
+
+            <TextView
+                android:id="@+id/send_text_view_4"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Sending: "/>
+
+            <TextView
+                android:id="@+id/receive_text_view_4"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Receiving: "/>
+
+            <TextView
+                android:id="@+id/receive_count_text_view_4"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Receive Count: 0"/>
+        </LinearLayout>
+
+        <!-- 节点5 -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <CheckBox
+                android:id="@+id/check_box_5"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Node 4"/>
+
+            <EditText
+                android:id="@+id/node_edit_text_5"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:hint="/dev/"/>
+
+            <TextView
+                android:id="@+id/send_text_view_5"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Sending: "/>
+
+            <TextView
+                android:id="@+id/receive_text_view_5"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Receiving: "/>
+
+            <TextView
+                android:id="@+id/receive_count_text_view_5"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Receive Count: 0"/>
+        </LinearLayout>
+        <!-- 重复此布局直到第10个节点 -->
+
+        <Button
+            android:id="@+id/start_button"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Start"/>
+
+    </LinearLayout>
+</ScrollView>

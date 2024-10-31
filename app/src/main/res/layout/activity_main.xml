@@ -5,12 +5,12 @@
 
 
     <Button
-        android:id="@+id/uart_test_button"
+        android:id="@+id/wifi_status_test_button"
         android:layout_width="80dp"
         android:layout_height="50dp"
         android:layout_marginTop="10dp"
-        android:layout_marginLeft="50dp"
-        android:text="uart test"
+        android:layout_marginLeft="150dp"
+        android:text="WIFI con"
         android:textSize="8sp" />
 
     <Button
@@ -18,8 +18,17 @@
         android:layout_width="80dp"
         android:layout_height="50dp"
         android:layout_marginTop="10dp"
-        android:layout_marginLeft="150dp"
+        android:layout_marginLeft="350dp"
         android:text="WifiBt"
+        android:textSize="8sp" />
+
+    <Button
+        android:id="@+id/uart_test_button"
+        android:layout_width="80dp"
+        android:layout_height="50dp"
+        android:layout_marginTop="10dp"
+        android:layout_marginLeft="50dp"
+        android:text="uart test"
         android:textSize="8sp" />
 
     <Button
@@ -31,14 +40,7 @@
         android:text="Storage"
         android:textSize="8sp" />
 
-    <Button
-        android:id="@+id/wifi_status_test_button"
-        android:layout_width="80dp"
-        android:layout_height="50dp"
-        android:layout_marginTop="10dp"
-        android:layout_marginLeft="350dp"
-        android:text="WIFI con"
-        android:textSize="8sp" />
+
 
 
 

@@ -10,7 +10,10 @@ dependencyResolutionManagement {
     repositories {
         google()
         mavenCentral()
+        jcenter() // 注意：这个仓库将在未来关闭
     }
 }
 rootProject.name = "rpdzkj-test"
 include ':app'
+include ':Android-SerialPort-API:serialport'
+

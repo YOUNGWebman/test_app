@@ -164,8 +164,13 @@ public class SpiTestActivity extends AppCompatActivity {
                     timeDisplay.start();
                     if(!f00.exists() && !f01.exists() && !f02.exists() )
                     {
-                        shouldPause.set(true);
-                        timeDisplay.pause();
+                        Intent resultIntent = new Intent();
+                        resultIntent.putExtra("TIMER", true);
+                        resultIntent.putExtra("NODE_NOT_EXIST", true);
+                        resultIntent.putExtra("TIME_IN_SECONDS", timeInSeconds);
+
+                        setResult(RESULT_OK, resultIntent);
+                        { finish();}
                     }
                     if (f00.exists()) {
                         String cmd = "sc16is752 -d " + "/dev/spidev0.0" + " -s " + tx + tx;
