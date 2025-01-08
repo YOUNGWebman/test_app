@@ -6,6 +6,7 @@ import java.util.concurrent.CountDownLatch;
 import com.example.rpdzkj_test.TimeDisplay;
 import android.content.SharedPreferences;
 import android.content.Context;
+import com.example.rpdzkj_test.TestInfo;
 
 import android.content.Intent;
 import android.os.Bundle;
@@ -32,7 +33,6 @@ import java.io.BufferedReader;
 import java.io.DataOutputStream;
 import java.io.InputStreamReader;
 
-
 import android.widget.CheckBox;
 
 import java.util.concurrent.ExecutorService;
@@ -43,6 +43,13 @@ import android.view.View;
 import android.view.LayoutInflater;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.List;
+
+import androidx.lifecycle.LifecycleObserver;
+import androidx.lifecycle.OnLifecycleEvent;
+import androidx.lifecycle.Lifecycle;
+import androidx.lifecycle.LifecycleOwner;
+import androidx.lifecycle.LifecycleObserver;
+
 
 import androidx.appcompat.app.AppCompatActivity;
 
@@ -62,12 +69,15 @@ public class UartTestActivity extends AppCompatActivity {
     private boolean timerEnabled;
     private int timeInSeconds;
     private Button startButton;
-   // int successCount =0;
-   int[] array = new int[10]; // Java中的数组默认初始化为0
+    private TestInfo testInfo;
+    int[] array = new int[10]; // Java中的数组默认初始化为0
     private TimeDisplay timeDisplay;
-   // private  long startTime = 0;
+    // private  long startTime = 0;
     private TextView getTimeTextView;
     ExecutorService executor = null;
+    private int[] testCounts;
+    List<String> selectedTtys = new ArrayList<>();
+    List<Integer> selectedCounts = new ArrayList<>();
 
 
     private ArrayList<File> getUsableUART() {
@@ -218,25 +228,30 @@ public class UartTestActivity extends AppCompatActivity {
         return new CmdResult(exitVal, output.toString());
     }
 
-public void doTest() {
+   /* public void doTest() {
         executor = Executors.newFixedThreadPool(10);
         String str = "0123";
-        final String testString =  str + str;
+        final String testString = str + str;
         String uartSettings = "fffffff4:4:1cb2:a30:3:1c:7f:15:4:0:1:0:11:13:1a:0:12:f:17:16:0:0:0";
+        selectedTtys.clear();
+        //  selectedCounts.clear();
 
-        for (int i = 0; i < checkBoxArrayList.size(); i ++) {
+        for (int i = 0; i < checkBoxArrayList.size(); i++) {
             CheckBox checkBox = checkBoxArrayList.get(i);
             if (checkBox.isChecked()) {
                 File uart = uartsToTest.get(i);
+                if (!selectedTtys.contains(uart.getName())) {
+                    selectedTtys.add(uart.getName());
+                   // selectedCounts.add(0); // 初始测试次数为0
+                }
                 Log.d("RRRRR do uart", uart.getName());
                 final int finalI = i;
 
                 Future<?> future = executor.submit(new Runnable() {
                     @Override
                     public void run() {
-
                         CmdResult result;
-                        String testFilePath0 =  "/data/";
+                        String testFilePath0 = "/data/";
                         upgradeRootPermission(testFilePath0);
                         String testFilePath = testFilePath0 + uart.getName() + ".txt";
                         upgradeRootPermission(testFilePath);
@@ -269,88 +284,13 @@ public void doTest() {
                         runCmd(cmdClean, 1);
                         Log.d("RRRRRR result ", uart.getName() + " " + result.output);
                         runOnUiThread(() -> {
-
-                           if (shouldStops.get(finalI).get()) {
-                               return;
-                           }
-                            if (isSuccess ) {
-
-                                array[finalI]++;
-                                    sendTextViewList.get(finalI).setText("发送内容：" + testString);
-                                    receiveTextViewList.get(finalI).setText("接收内容：" + result.output);
-                                    countTextViewList.get(finalI).setText( "测试次数：" + array[finalI] );
-                                //}
-                            } else {
-                                // 测试失败，停止测试
-                                timeDisplay.pause();
-                                shouldStops.get(finalI).set(true);
-                                shouldPause.set(true);
-                                sendTextViewList.get(finalI).setText("测试失败");
-                                receiveTextViewList.get(finalI).setText("测试失败");
-                                // 停止增加successCount
-                                executor.shutdownNow();
-                                Thread.currentThread().interrupt();
-                            }
-                        });
-
-                    }
-                });
-            }
-        }
-
-        executor.shutdown();
-    }
-/*public void doTest() {
-    // 创建固定大小的线程池
-    executor = Executors.newFixedThreadPool(10);
-    String str = "0123";
-    final String testString = str + str;
-    String uartSettings = "fffffff4:4:1cb2:a30:3:1c:7f:15:4:0:1:0:11:13:1a:0:12:f:17:16:0:0:0";
-
-    for (int i = 0; i < checkBoxArrayList.size(); i++) {
-        CheckBox checkBox = checkBoxArrayList.get(i);
-        if (checkBox.isChecked()) {
-            File uart = uartsToTest.get(i);
-            Log.d("RRRRR do uart", uart.getName());
-            final int finalI = i;
-
-            // 提交任务给线程池
-            Future<?> future = executor.submit(new Runnable() {
-                @Override
-                public void run() {
-                    CmdResult result;
-                    String testFilePath0 = "/data/";
-                    upgradeRootPermission(testFilePath0);
-                    String testFilePath = testFilePath0 + uart.getName() + ".txt";
-                    upgradeRootPermission(testFilePath);
-                    String cmdTouch = String.format("touch %s \n", testFilePath);
-                    String cmd0 = String.format("stty -F %s %s \n", uart.getAbsolutePath(), uartSettings);
-                    String cmd1 = String.format("cat %s > %s &\n", uart.getAbsolutePath(), testFilePath);
-                    String cmdW = String.format("echo \"%s\" > %s \n", testString, uart.getAbsolutePath());
-                    String cmdR = String.format("cat %s \n", testFilePath);
-                    String cmdRM = String.format("rm %s \n", testFilePath);
-                    String cmdClean = "killall cat\n";
-
-                    try {
-                        runCmd(cmdTouch, 1);
-                        runCmd(cmd0, 1);
-                        runCmd(cmd1, 1);
-                        Thread.sleep(300); // 延时300毫秒
-                        runCmd(cmdW, 1);
-                        Thread.sleep(300); // 延时300毫秒
-                        result = runCmd(cmdR, 1);
-                        boolean isSuccess = testString.equals(result.output);
-                        runCmd(cmdRM, 1);
-                        runCmd(cmdClean, 1);
-
-                        Log.d("RRRRRR result ", uart.getName() + " " + result.output);
-
-                        runOnUiThread(() -> {
                             if (shouldStops.get(finalI).get()) {
                                 return;
                             }
+
                             if (isSuccess) {
                                 array[finalI]++;
+                                testCounts[finalI]++;
                                 sendTextViewList.get(finalI).setText("发送内容：" + testString);
                                 receiveTextViewList.get(finalI).setText("接收内容：" + result.output);
                                 countTextViewList.get(finalI).setText("测试次数：" + array[finalI]);
@@ -361,28 +301,190 @@ public void doTest() {
                                 shouldPause.set(true);
                                 sendTextViewList.get(finalI).setText("测试失败");
                                 receiveTextViewList.get(finalI).setText("测试失败");
-                                // 停止增加successCount
                                 executor.shutdownNow();
                                 Thread.currentThread().interrupt();
                             }
                         });
-                    } catch (InterruptedException e) {
-                        Thread.currentThread().interrupt();
-                        e.printStackTrace();
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    } finally {
-                        // 确保在任务完成后关闭executor
-                        if (executor != null && !executor.isShutdown()) {
-                            executor.shutdown();
+                    }
+                });
+            }
+        }
+
+        executor.shutdown();
+        try {
+            executor.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+            Thread.currentThread().interrupt();
+        }
+
+    } */
+
+    public void doTest() {
+        executor = Executors.newFixedThreadPool(10);
+        String str = "0123";
+        final String testString = str + str;
+        String uartSettings = "fffffff4:4:1cb2:a30:3:1c:7f:15:4:0:1:0:11:13:1a:0:12:f:17:16:0:0:0";
+        selectedTtys.clear();
+
+        for (int i = 0; i < checkBoxArrayList.size(); i++) {
+            CheckBox checkBox = checkBoxArrayList.get(i);
+            if (checkBox.isChecked()) {
+                File uart = uartsToTest.get(i);
+                if (!selectedTtys.contains(uart.getName())) {
+                    selectedTtys.add(uart.getName());
+                }
+                Log.d("RRRRR do uart", uart.getName());
+                final int finalI = i;
+
+               /* Future<?> future = executor.submit(new Runnable() {
+                    @Override
+                    public void run() {
+                        try {
+                            CmdResult result;
+                            String testFilePath0 = "/data/";
+                            upgradeRootPermission(testFilePath0);
+                            String testFilePath = testFilePath0 + uart.getName() + ".txt";
+                            upgradeRootPermission(testFilePath);
+                            String cmdTouch = String.format("touch %s \n", testFilePath);
+                            String cmd0 = String.format("stty -F %s %s \n", uart.getAbsolutePath(), uartSettings);
+                            String cmd1 = String.format("cat %s > %s  &\n", uart.getAbsolutePath(), testFilePath);
+                            String cmdW = String.format("echo \"%s\" > %s  \n", testString, uart.getAbsolutePath());
+                            String cmdR = String.format("cat %s \n", testFilePath);
+                            String cmdRM = String.format("rm %s \n", testFilePath);
+                            String cmdClean = "killall cat\n";
+                            runCmd(cmdTouch, 1);
+                            runCmd(cmd0, 1);
+                            runCmd(cmd1, 1);
+                            try {
+                                Thread.sleep(300);
+                            } catch (InterruptedException e) {
+                                Thread.currentThread().interrupt();
+                                return;
+                            }
+                            runCmd(cmdW, 1);
+                            try {
+                                Thread.sleep(300);
+                            } catch (InterruptedException e) {
+                                Thread.currentThread().interrupt();
+                                return;
+                            }
+                            result = runCmd(cmdR, 1);
+                            boolean isSuccess = testString.equals(result.output);
+                            runCmd(cmdRM, 1);
+                            runCmd(cmdClean, 1);
+                            Log.d("RRRRRR result ", uart.getName() + " " + result.output);
+                            runOnUiThread(() -> {
+                                if (shouldStops.get(finalI).get()) {
+                                    return;
+                                }
+                                if (isSuccess) {
+                                    array[finalI]++;
+                                    testCounts[finalI]++;
+                                    sendTextViewList.get(finalI).setText("发送内容：" + testString);
+                                    receiveTextViewList.get(finalI).setText("接收内容：" + result.output);
+                                    countTextViewList.get(finalI).setText("测试次数：" + array[finalI]);
+                                } else {
+                                    // 测试失败，停止测试
+                                    timeDisplay.pause();
+                                    shouldStops.get(finalI).set(true);
+                                    shouldPause.set(true);
+                                    sendTextViewList.get(finalI).setText("测试失败");
+                                    receiveTextViewList.get(finalI).setText("测试失败");
+                                    executor.shutdownNow();
+                                    Thread.currentThread().interrupt();
+                                }
+                            });
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        } finally {
+                            if (executor != null && executor.isTerminated()) {
+                                executor.shutdown();
+                            }
                         }
                     }
-                }
-            });
+                }); */
+
+                Future<?> future = executor.submit(new Runnable() {
+                    @Override
+                    public void run() {
+                        try {
+                            CmdResult result;
+                            String testFilePath0 = "/data/";
+                            upgradeRootPermission(testFilePath0);
+                            String testFilePath = testFilePath0 + uart.getName() + ".txt";
+                            upgradeRootPermission(testFilePath);
+                            String cmdTouch = String.format("touch %s \n", testFilePath);
+                            String cmd0 = String.format("stty -F %s %s \n", uart.getAbsolutePath(), uartSettings);
+                            String cmd1 = String.format("cat %s > %s  &\n", uart.getAbsolutePath(), testFilePath);
+                            String cmdW = String.format("echo \"%s\" > %s  \n", testString, uart.getAbsolutePath());
+                            String cmdR = String.format("cat %s \n", testFilePath);
+                            String cmdRM = String.format("rm %s \n", testFilePath);
+                            String cmdClean = "killall cat\n";
+                            runCmd(cmdTouch, 1);
+                            runCmd(cmd0, 1);
+                            runCmd(cmd1, 1);
+                            try {
+                                Thread.sleep(300);
+                            } catch (InterruptedException e) {
+                                Thread.currentThread().interrupt();
+                                return;
+                            }
+                            runCmd(cmdW, 1);
+                            try {
+                                Thread.sleep(300);
+                            } catch (InterruptedException e) {
+                                Thread.currentThread().interrupt();
+                                return;
+                            }
+                            result = runCmd(cmdR, 1);
+                            boolean isSuccess = testString.equals(result.output);
+                            runCmd(cmdRM, 1);
+                            runCmd(cmdClean, 1);
+                            Log.d("RRRRRR result ", uart.getName() + " " + result.output);
+                            runOnUiThread(() -> {
+                                if (shouldStops.get(finalI).get()) {
+                                    return;
+                                }
+                                if (isSuccess) {
+                                    array[finalI]++;
+                                    testCounts[finalI]++;
+                                    sendTextViewList.get(finalI).setText("发送内容：" + testString);
+                                    receiveTextViewList.get(finalI).setText("接收内容：" + result.output);
+                                    countTextViewList.get(finalI).setText("测试次数：" + array[finalI]);
+                                } else {
+                                    timeDisplay.pause();
+                                    shouldStops.get(finalI).set(true);
+                                    shouldPause.set(true);
+                                    sendTextViewList.get(finalI).setText("测试失败");
+                                    receiveTextViewList.get(finalI).setText("测试失败");
+                                    executor.shutdownNow();
+                                    Thread.currentThread().interrupt();
+                                }
+                            });
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        } finally {
+                            if (executor != null && !executor.isShutdown()) {
+                                executor.shutdown();
+                            }
+                        }
+                    }
+                });
+
+
+            }
+        }
+
+        try {
+            executor.shutdown();
+            executor.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+            Thread.currentThread().interrupt();
         }
     }
-    executor.shutdown();
-} */
+
 
     public class CmdResult {
         CmdResult(int exitVal, String output) {
@@ -404,7 +506,9 @@ public void doTest() {
         timerEnabled = intent.getBooleanExtra("TIMER", false);
         timeInSeconds = intent.getIntExtra("TIME_IN_SECONDS", 0);
         getTimeTextView = findViewById(R.id.uartTimeText);
-        // 初始化checkBoxArrayList
+        checkBoxArrayList = new ArrayList<>();
+        testCounts = new int[10];
+
 
         resultHandler = new Handler(Looper.getMainLooper()) {
             @Override
@@ -429,22 +533,36 @@ public void doTest() {
                 timeDisplay.start();
                 // 创建一个新的ExecutorService
                 executor = Executors.newSingleThreadExecutor();
+                TestLifecycleObserver lifecycleObserver = new TestLifecycleObserver(executor, shouldPause, shouldStops);
+                getLifecycle().addObserver(lifecycleObserver);
                 // 在新的线程中循环执行doTest()
                 executor.submit(new Runnable() {
                     @Override
                     public void run() {
-                        while (!Thread.currentThread().isInterrupted()) {
-                            doTest();
-                            try {
-                                Thread.sleep(1500); // 2 秒延迟
-                            } catch (InterruptedException e) {
-                                Thread.currentThread().interrupt();
+                        try {
+                            while (!Thread.currentThread().isInterrupted()) {
+                                doTest();
+                                try {
+                                    Thread.sleep(1500);
+                                } catch (InterruptedException e) {
+                                    Thread.currentThread().interrupt();
+                                    break;
+                                }
+                            }
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        } finally {
+                            if (executor != null && !executor.isShutdown()) {
+                                executor.shutdown();
                             }
                         }
                     }
                 });
             }
         });
+
+
+        testInfo = new TestInfo(this);
 
         if (timerEnabled) {
             int timeInMillis = timeInSeconds * 1000;
@@ -462,29 +580,57 @@ public void doTest() {
                             }
 
                         }
-                    }, 1000); // 延时100毫秒，确保前置操作完成
+                    }, 1000); //
                 }
             });
-
 
             // 启动倒计时器，定时退出
             new Handler().postDelayed(new Runnable() {
                 @Override
                 public void run() {
-
                     Intent resultIntent = new Intent();
                     resultIntent.putExtra("TIMER", true);
                     resultIntent.putExtra("TIME_IN_SECONDS", timeInSeconds);
-
+                    if( shouldPause.get())
+                    {resultIntent.putExtra("TEST_PASS", false);}
+                    else
+                    {resultIntent.putExtra("TEST_PASS", true);}
                     setResult(RESULT_OK, resultIntent);
-                    if (!shouldPause.get() && !isFinishing()) {
+                  /*  if (!shouldPause.get() && !isFinishing()) {
 
                         finish();
-                    }
+                    } */
+                    // 获取 UART 信息并追加到 HTML 文件中
+
+                    File saveFile = new File(getFilesDir(), "saved_ids.html");
+                    testInfo.setSavedFile(saveFile);
+                    String uartInfo = getUsableUARTAsString();
+                    System.out.println(uartInfo);
+                    // 构建选中的 ttyS 字符串
+                    String selectedTtysString = String.join(" ", selectedTtys);
+                    // 保存测试信息
+                    testInfo.appendAdditionalContent(uartInfo, testCounts, selectedTtysString);
+                    finish();
                 }
             }, timeInMillis);
         }
     }
+
+
+
+    public String getUsableUARTAsString() {
+        ArrayList<File> uartFiles = getUsableUART();
+        if (uartFiles != null) {
+            StringBuilder uartString = new StringBuilder();
+            for (File file : uartFiles) {
+                uartString.append(file.getAbsolutePath()).append("\n");
+            }
+            return uartString.toString();
+        } else {
+            return "No usable UART found";
+        }
+    }
+
 
     @Override
     public boolean dispatchKeyEvent(KeyEvent event) {
@@ -497,7 +643,7 @@ public void doTest() {
         return super.dispatchKeyEvent(event);
     }
 
-
+/*
     @Override
     protected void onDestroy() {
         super.onDestroy();
@@ -507,6 +653,7 @@ public void doTest() {
         if (executor != null && !executor.isShutdown()) {
             executor.shutdown();
         }
+
         // 等待所有任务终止
         try {
             if (executor != null && !executor.awaitTermination(10, TimeUnit.SECONDS)) {
@@ -517,8 +664,48 @@ public void doTest() {
         }
     }
 
+    */
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        Log.e("UART Test", "Activity 销毁，进入 onDestroy 方法");
+        // 停止timeDisplay
+        if (timeDisplay != null) {
+            timeDisplay.pause();
+        }
+        // 停止执行器并尝试中断所有任务
+        if (executor != null || !executor.isShutdown()) {
+            Log.e("UART Test", "开始线程回收");
+            executor.shutdownNow();
+            try {
+                if (!executor.awaitTermination(60, TimeUnit.SECONDS)) {
+                    executor.shutdownNow();
+                    Log.e("UART Test", "线程终止");
+                    if (!executor.awaitTermination(60, TimeUnit.SECONDS)) {
+                        Log.e("UART Test", "线程池未能终止");
+                    }
+                }
+            } catch (InterruptedException e) {
+                executor.shutdownNow();
+                Thread.currentThread().interrupt();
+            }
+        }
+        // 停止所有其他正在进行的任务
+        shouldPause.set(true);
+        for (AtomicBoolean stopFlag : shouldStops) {
+            stopFlag.set(true);
+        }
+
+
+    }
+
+
+
+
     private void stopBackgroundTask() {
         // 检查是否有未完成的任务并取消
+        terminateAllCatProcesses();
         if (executor != null && !executor.isShutdown()) {
             executor.shutdownNow();
         }
@@ -560,4 +747,86 @@ public void doTest() {
         }
         return true;
     }
+
+    /*public class TestLifecycleObserver implements LifecycleObserver {
+        private final ExecutorService executor;
+        private final AtomicBoolean shouldPause;
+        private final List<AtomicBoolean> shouldStops;
+
+        public TestLifecycleObserver(ExecutorService executor, AtomicBoolean shouldPause, List<AtomicBoolean> shouldStops) {
+            this.executor = executor;
+            this.shouldPause = shouldPause;
+            this.shouldStops = shouldStops;
+        }
+
+        @OnLifecycleEvent(Lifecycle.Event.ON_DESTROY)
+        public void onDestroy() {
+            Log.e("UART Test", "LifecycleObserver - onDestroy triggered");
+            if (executor != null && !executor.isShutdown()) {
+                Log.e("UART Test", "开始线程回收");
+                executor.shutdownNow();
+                try {
+                    if (!executor.awaitTermination(60, TimeUnit.SECONDS)) {
+                        executor.shutdownNow();
+                        Log.e("UART Test", "线程终止");
+                        if (!executor.awaitTermination(60, TimeUnit.SECONDS)) {
+                            Log.e("UART Test", "线程池未能终止");
+                        }
+                    }
+                } catch (InterruptedException e) {
+                    executor.shutdownNow();
+                    Thread.currentThread().interrupt();
+                }
+            }
+            shouldPause.set(true);
+            for (AtomicBoolean stopFlag : shouldStops) {
+                stopFlag.set(true);
+            }
+            owner.getLifecycle().removeObserver(this);
+        }
+    } */
+    public class TestLifecycleObserver implements LifecycleObserver {
+        private final ExecutorService executor;
+        private final AtomicBoolean shouldPause;
+        private final List<AtomicBoolean> shouldStops;
+
+        public TestLifecycleObserver(ExecutorService executor, AtomicBoolean shouldPause, List<AtomicBoolean> shouldStops) {
+            this.executor = executor;
+            this.shouldPause = shouldPause;
+            this.shouldStops = shouldStops;
+        }
+
+        @OnLifecycleEvent(Lifecycle.Event.ON_DESTROY)
+        public void onDestroy(LifecycleOwner owner) {
+            Log.e("UART Test", "LifecycleObserver - onDestroy triggered");
+            if (executor != null && !executor.isShutdown()) {
+                Log.e("UART Test", "开始线程回收");
+                executor.shutdownNow();
+                try {
+                    if (!executor.awaitTermination(60, TimeUnit.SECONDS)) {
+                        executor.shutdownNow();
+                        Log.e("UART Test", "线程终止");
+                        if (!executor.awaitTermination(60, TimeUnit.SECONDS)) {
+                            Log.e("UART Test", "线程池未能终止");
+                        }
+                    }
+                } catch (InterruptedException e) {
+                    executor.shutdownNow();
+                    Thread.currentThread().interrupt();
+                }
+            }
+            shouldPause.set(true);
+            for (AtomicBoolean stopFlag : shouldStops) {
+                stopFlag.set(true);
+            }
+            // 在调用移除观察者前添加日志
+            Log.e("UART Test", "尝试移除观察者");
+            // 取消观察者，以避免内存泄漏
+            owner.getLifecycle().removeObserver(this);
+            // 在调用移除观察者后添加日志
+            Log.e("UART Test", "观察者已移除");
+        }
+    }
+
+
 }

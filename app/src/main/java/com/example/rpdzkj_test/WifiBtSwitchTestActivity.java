@@ -40,7 +40,7 @@ import java.util.Timer;
 import java.util.TimerTask;
 import android.graphics.Color;
 import java.util.concurrent.atomic.AtomicBoolean;
-
+import com.example.rpdzkj_test.TestInfo;
 
 public class WifiBtSwitchTestActivity extends AppCompatActivity {
     private WifiManager wifiManager;
@@ -59,6 +59,7 @@ public class WifiBtSwitchTestActivity extends AppCompatActivity {
     private static final int DELAY_MS = 2000;  // 延迟2秒
     private boolean timerEnabled;
     private int timeInSeconds;
+    private TestInfo testInfo;
 
     private AtomicBoolean  shouldPause = new AtomicBoolean(false); // 标志是否应暂停
 
@@ -77,7 +78,10 @@ public class WifiBtSwitchTestActivity extends AppCompatActivity {
         getTimeTextView = findViewById(R.id.testTime);
         timeDisplay = new TimeDisplay(getTimeTextView);
         timeDisplay.start();
+        testInfo = new TestInfo(this);
         Button wifiButton = findViewById(R.id.wifi_button);
+        File saveFile = new File(getFilesDir(), "saved_ids.html");
+        testInfo.setSavedFile(saveFile);
         wifiButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -210,13 +214,20 @@ public class WifiBtSwitchTestActivity extends AppCompatActivity {
                     Intent resultIntent = new Intent();
                     resultIntent.putExtra("TIMER", true);
                     resultIntent.putExtra("TIME_IN_SECONDS", timeInSeconds);
-
+                    if( shouldPause.get())
+                    {resultIntent.putExtra("TEST_PASS", false);}
+                    else
+                    {resultIntent.putExtra("TEST_PASS", true);}
                     setResult(RESULT_OK, resultIntent);
                     stopButton.performClick();
-                    if (!shouldPause.get() && !isFinishing()) {
+                   /* if (!shouldPause.get() && !isFinishing()) {
                         stopButton.performClick();
                         finish();
-                    }
+                    } */
+                    String WifiSwTimes = wifiCountTextView.getText().toString();
+                    String BtSwTimes = bluetoothCountTextView.getText().toString();
+                    testInfo.appendAdditionalWifiBtSwContent(WifiSwTimes, BtSwTimes);
+                    finish();
                 }
             }, timeInMillis);
         }

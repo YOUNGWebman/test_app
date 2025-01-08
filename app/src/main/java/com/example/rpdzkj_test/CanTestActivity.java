@@ -23,6 +23,7 @@ import java.text.SimpleDateFormat;
 import java.util.Locale;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import com.example.rpdzkj_test.TestInfo;
 
 
 
@@ -47,6 +48,7 @@ public class CanTestActivity extends AppCompatActivity {
     private TimeDisplay timeDisplay;
     private  long startTime = 0;
     private TextView getTimeTextView;
+    private TestInfo testInfo;
     String cmd0Touch = String.format("touch /data/can0.txt");
     String cmd01="ip link set can0 down";
     String cmd02="ip link set can0 type can bitrate 100000";
@@ -114,6 +116,9 @@ public class CanTestActivity extends AppCompatActivity {
         Intent intent = getIntent();
         timerEnabled = intent.getBooleanExtra("TIMER", false);
         timeInSeconds = intent.getIntExtra("TIME_IN_SECONDS", 0);
+        testInfo = new TestInfo(this);
+        File saveFile = new File(getFilesDir(), "saved_ids.html");
+        testInfo.setSavedFile(saveFile);
 
 /* startCanButton.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -149,6 +154,7 @@ public class CanTestActivity extends AppCompatActivity {
                         resultIntent.putExtra("TIMER", true);
                         resultIntent.putExtra("TIME_IN_SECONDS", timeInSeconds);
                         setResult(RESULT_OK, resultIntent);
+
                         {finish();}
                     }
                     ((TextView) findViewById(R.id.canString)).setText(canTotal == 0 ? "检测CAN数为0,退出测试" : "当前CAN设备数量为： " + canTotal);
@@ -166,8 +172,21 @@ public class CanTestActivity extends AppCompatActivity {
                     Intent resultIntent = new Intent();
                     resultIntent.putExtra("TIMER", true);
                     resultIntent.putExtra("TIME_IN_SECONDS", timeInSeconds);
+                    if( shouldPause.get())
+                    {resultIntent.putExtra("TEST_PASS", false);}
+                    else
+                    {resultIntent.putExtra("TEST_PASS", true);}
                     setResult(RESULT_OK, resultIntent);
-                    if( !shouldPause.get())
+                   // if( !shouldPause.get())
+                    String CanSum = ((TextView) findViewById(R.id.canString)).getText().toString();
+                    String Can0Rc = ((TextView) findViewById(R.id.can0Recive)).getText().toString();
+                    String Can0Times = ((TextView) findViewById(R.id.can0String)).getText().toString();
+                    String Can1Rc = ((TextView) findViewById(R.id.can1Recive)).getText().toString();
+                    String Can1Times = ((TextView) findViewById(R.id.can1String)).getText().toString();
+                    String Can2Rc = ((TextView) findViewById(R.id.can2Recive)).getText().toString();
+                    String Can2Times = ((TextView) findViewById(R.id.can2String)).getText().toString();
+                    testInfo.appendAdditionalCanTestContent(CanSum, Can0Rc, Can0Times, Can1Rc, Can1Times, Can2Rc, Can2Times);
+                    testInfo.setSavedFile(saveFile);
                     {finish();}
                 }
             };

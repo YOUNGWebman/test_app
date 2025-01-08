@@ -11,7 +11,7 @@
         android:layout_height="0dp"
         android:layout_columnWeight="1"
         android:layout_rowWeight="1"
-        android:text="eth0_test："
+        android:text="eth0_not_exits"
         android:textSize="11sp" />
 
     <TextView
@@ -20,7 +20,7 @@
         android:layout_height="0dp"
         android:layout_columnWeight="1"
         android:layout_rowWeight="1"
-        android:text="eth1_test："
+        android:text="eth1_not_exits"
         android:textSize="11sp" />
 
     <TextView
@@ -29,7 +29,7 @@
         android:layout_height="0dp"
         android:layout_columnWeight="1"
         android:layout_rowWeight="1"
-        android:text="eth2_test："
+        android:text="eth2_not_exits"
         android:textSize="11sp" />
 
     <View

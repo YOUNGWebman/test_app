@@ -15,5 +15,5 @@ dependencyResolutionManagement {
 }
 rootProject.name = "rpdzkj-test"
 include ':app'
-include ':Android-SerialPort-API:serialport'
+//include ':Android-SerialPort-API:serialport'
 

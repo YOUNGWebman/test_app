@@ -118,7 +118,7 @@
         android:layout_height="50dp"
         android:layout_marginTop="60dp"
         android:layout_marginLeft="550dp"
-        android:text="STOP"
+        android:text="REST"
         android:textSize="8sp" />
 
 
@@ -177,13 +177,101 @@
     </LinearLayout>
 
 
-    <Button
-        android:id="@+id/auto_test_button"
+    <TextView
+        android:id="@+id/get_cpu_id_text_view"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="200dp"
+        android:layout_marginTop="120dp"
         android:layout_marginLeft="300dp"
-        android:text="自动测试" />
+        android:text="CPU_ID :"
+        android:textSize="11sp" />
+
+    <TextView
+        android:id="@+id/cpu_id_input"
+        android:layout_width="200dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="120dp"
+        android:layout_marginLeft="350dp"
+        android:background="@drawable/edit_text_border"
+        android:textColor="#000000" />
+
+    <TextView
+        android:id="@+id/get_pcb_id_text_view"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="170dp"
+        android:layout_marginLeft="300dp"
+        android:text="PCB_ID :"
+        android:textSize="11sp" />
+
+    <EditText
+        android:id="@+id/pcb_id_input"
+        android:layout_width="200dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="170dp"
+        android:layout_marginLeft="350dp"
+        android:background="@drawable/edit_text_border"
+        android:textColor="#000000" />
+
+    <TextView
+        android:id="@+id/get_sn_id_text_view"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="220dp"
+        android:layout_marginLeft="300dp"
+        android:text="SN_ID :"
+        android:textSize="11sp" />
+
+    <TextView
+        android:id="@+id/sn_id_input"
+        android:layout_width="200dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="220dp"
+        android:layout_marginLeft="350dp"
+        android:background="@drawable/edit_text_border"
+        android:textColor="#000000" />
+
+    <Button
+        android:id="@+id/save_id_button"
+        android:layout_width="80dp"
+        android:layout_height="50dp"
+        android:layout_marginTop="250dp"
+        android:layout_marginLeft="300dp"
+        android:text="保存信息"
+        android:textSize="9sp" />
+
+
+
+    <Button
+        android:id="@+id/test_result_button"
+        android:layout_width="80dp"
+        android:layout_height="50dp"
+        android:layout_marginTop="250dp"
+        android:layout_marginLeft="450dp"
+        android:text="查看结果"
+        android:textSize="9sp" />
+
+
+    <Button
+        android:id="@+id/upload_test_result_button"
+        android:layout_width="80dp"
+        android:layout_height="50dp"
+        android:layout_marginTop="250dp"
+        android:layout_marginLeft="600dp"
+        android:text="上传结果"
+        android:textSize="9sp" />
+
+
+
+    <Button
+        android:id="@+id/auto_test_button"
+        android:layout_width="80dp"
+        android:layout_height="50dp"
+        android:layout_marginTop="295dp"
+        android:layout_marginLeft="300dp"
+        android:text="自动测试"
+        android:textSize="9sp"/>
+
 
 
 

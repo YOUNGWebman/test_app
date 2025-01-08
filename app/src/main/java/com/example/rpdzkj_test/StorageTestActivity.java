@@ -17,6 +17,7 @@ import androidx.appcompat.app.AppCompatActivity;
 
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.InputStreamReader;
 import java.io.IOException;
 import android.util.Log;
@@ -24,6 +25,7 @@ import java.lang.reflect.Method;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import android.graphics.Color;
+import com.example.rpdzkj_test.TestInfo;
 
 
 public class StorageTestActivity extends AppCompatActivity  {
@@ -53,7 +55,7 @@ public class StorageTestActivity extends AppCompatActivity  {
 
     private AtomicBoolean isTimerRunning = new AtomicBoolean(false); // 用于检查定时器状态
     private AtomicBoolean  shouldPause = new AtomicBoolean(false); // 标志是否应暂停
-
+    private TestInfo testInfo;
 
 
     public void onCreate(Bundle paramBundle){
@@ -76,10 +78,12 @@ public class StorageTestActivity extends AppCompatActivity  {
         getTimeTextView = findViewById(R.id.testTime);
         timeDisplay = new TimeDisplay(getTimeTextView);
         timeDisplay.start();
-
+        testInfo = new TestInfo(this);
         Intent intent = getIntent();
         timerEnabled = intent.getBooleanExtra("TIMER", false);
         timeInSeconds = intent.getIntExtra("TIME_IN_SECONDS", 0);
+        File saveFile = new File(getFilesDir(), "saved_ids.html");
+        testInfo.setSavedFile(saveFile);
 
         Button sdTestButton = findViewById(R.id.sd_test_button);
         sdTestButton.setOnClickListener(new View.OnClickListener() {
@@ -393,12 +397,27 @@ public class StorageTestActivity extends AppCompatActivity  {
                     Intent resultIntent = new Intent();
                     resultIntent.putExtra("TIMER", true);
                     resultIntent.putExtra("TIME_IN_SECONDS", timeInSeconds);
+                    if( shouldPause.get() || isFinishing())
+                    {resultIntent.putExtra("TEST_PASS", false);}
+                    else
+                    {resultIntent.putExtra("TEST_PASS", true);}
                     setResult(RESULT_OK, resultIntent);
                     // 添加标志位检查并设置是否需要停止
-                    if (!shouldPause.get() && !isFinishing()) {
+                 /*   if (!shouldPause.get() && !isFinishing()) {
                         stopButton.performClick();
                         finish();
-                    }
+                    } */
+                    String sdStatus = sdStatusTextView.getText().toString();
+                    String sataStatus = sataStatusTextView.getText().toString();
+                    String udiskStatus = UsbStatusTextView.getText().toString();
+                    String m2Status = M2StatusTextView.getText().toString();
+                    String sdTimes = sdCheckView.getText().toString();
+                    String sataTimes = sataCheckView.getText().toString();
+                    String udiskTimes = udiskCheckView.getText().toString();
+                    String m2Times = m2CheckView.getText().toString();
+                    testInfo.appendAdditionalStorageContent(sdStatus, sataStatus, udiskStatus, m2Status, sdTimes, sataTimes, udiskTimes, m2Times);
+                    stopButton.performClick();
+                    finish();
                 }
             }, timeInMillis);
         }

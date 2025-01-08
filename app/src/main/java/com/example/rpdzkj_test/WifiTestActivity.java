@@ -14,6 +14,7 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import android.content.IntentFilter;
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.InputStreamReader;
 
 import java.util.List;
@@ -32,6 +33,7 @@ import android.net.NetworkCapabilities;
 import android.net.Network;
 import android.os.SystemClock;
 import android.widget.Toast;
+import com.example.rpdzkj_test.TestInfo;
 
 
 public class WifiTestActivity extends AppCompatActivity {
@@ -43,6 +45,7 @@ public class WifiTestActivity extends AppCompatActivity {
     private NetworkTest networkTest;
     private boolean timerEnabled;
     private int timeInSeconds;
+    private TestInfo testInfo;
 
     private Handler thandler;
     private Runnable trunnable;
@@ -61,26 +64,9 @@ public class WifiTestActivity extends AppCompatActivity {
         Intent intent = getIntent();
         timerEnabled = intent.getBooleanExtra("TIMER", false);
         timeInSeconds = intent.getIntExtra("TIME_IN_SECONDS", 0);
+        testInfo = new TestInfo(this);
 
 
-        if (timerEnabled) {
-            int timeInMillis = timeInSeconds * 1000;
-
-            // 启动倒计时器，定时退出
-            new Handler().postDelayed(new Runnable() {
-                @Override
-                public void run() {
-
-                    Intent resultIntent = new Intent();
-                    resultIntent.putExtra("TIMER", true);
-                    resultIntent.putExtra("TIME_IN_SECONDS", timeInSeconds);
-
-                    setResult(RESULT_OK, resultIntent);
-                    if( !shouldPause.get())
-                    {finish();}
-                }
-            }, timeInMillis);
-        }
 
      // 初始化isRunning
         AtomicBoolean isRunning0 = new AtomicBoolean(false);
@@ -97,6 +83,33 @@ public class WifiTestActivity extends AppCompatActivity {
 
         // 开始测试
         networkTest.start();
+        File saveFile = new File(getFilesDir(), "saved_ids.html");
+        testInfo.setSavedFile(saveFile);
+        if (timerEnabled) {
+            int timeInMillis = timeInSeconds * 1000;
+
+
+            // 启动倒计时器，定时退出
+            new Handler().postDelayed(new Runnable() {
+                @Override
+                public void run() {
+
+                    Intent resultIntent = new Intent();
+                    resultIntent.putExtra("TIMER", true);
+                    resultIntent.putExtra("TIME_IN_SECONDS", timeInSeconds);
+                    if( shouldPause.get())
+                    {resultIntent.putExtra("TEST_PASS", false);}
+                    else
+                    {resultIntent.putExtra("TEST_PASS", true);}
+                    setResult(RESULT_OK, resultIntent);
+                    // if( !shouldPause.get())
+                    String nwStatus = networkStatusTextView.getText().toString();
+                    testInfo.appendAdditionalWifiIcContent(nwStatus);
+                    {finish();}
+                }
+            }, timeInMillis);
+        }
+
 
 
     }

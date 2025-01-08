@@ -1,6 +1,7 @@
 package com.example.rpdzkj_test;
 
 import com.example.rpdzkj_test.TimeDisplay;
+import com.example.rpdzkj_test.TestInfo;
 import android.bluetooth.BluetoothAdapter;
 import android.content.Context;
 import android.content.Intent;
@@ -67,6 +68,19 @@ import java.util.ArrayList;
 import android.os.Build;
 import java.util.concurrent.TimeUnit;
 import android.content.SharedPreferences;
+import android.os.Environment;
+import androidx.appcompat.app.ActionBar;
+import androidx.appcompat.app.AppCompatActivity;
+import android.os.Bundle;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.widget.ImageView;
+import android.view.ViewGroup;
+import android.widget.LinearLayout;
+import android.widget.FrameLayout;
+
+
+
 
 
 
@@ -75,12 +89,16 @@ public class MainActivity extends AppCompatActivity {
     private Handler handler = new Handler();
     private static final String TAG = "MainActivity";
     private static final int PERMISSION_REQUEST_CODE = 100;
-    private TextView getTimeTextView;
     private NumberPicker hoursPicker, minutesPicker, secondsPicker;
     private  Runnable runnable;
     public static boolean isRunning = false;
     private TimeDisplay timeDisplay;
     private final int REQUEST_PERMISSION_CODE = 1001;
+
+    private TextView getTimeTextView;
+    private TextView cpuIdInput;
+    private EditText pcbIdInput;
+    private TextView snIdInput;
 
     private Button StorageButton;
     private Button WifiBtButton;
@@ -89,7 +107,11 @@ public class MainActivity extends AppCompatActivity {
     private Button uartButton;
     private Button canButton;
     private Button spiButton;
+    private Button saveIdButton;
+    private Button testResultButton;
+    private Button uploadTestResultButton;
 
+    private TestInfo testInfo;
 
     private static final int REQUEST_CODE_0 = 0;
     private static final int REQUEST_CODE_1 = 1;
@@ -117,7 +139,6 @@ public class MainActivity extends AppCompatActivity {
 
 
         getTimeTextView = findViewById(R.id.get_time_text_view);
-
         hoursPicker = findViewById(R.id.hours_picker);
         minutesPicker = findViewById(R.id.minutes_picker);
         secondsPicker = findViewById(R.id.seconds_picker);
@@ -125,18 +146,18 @@ public class MainActivity extends AppCompatActivity {
 
         // 设置 NumberPicker 的最小值和最大值
         // 定义自定义显示的小时值
-        String[] displayedValues = {"0", "1", "6", "12", "24", "48"};
+      /*  String[] displayedValues = {"0", "1", "6", "12", "24", "48"};
         hoursPicker.setMinValue(0);
         hoursPicker.setMaxValue(displayedValues.length - 1);
-        hoursPicker.setDisplayedValues(displayedValues);
-        //hoursPicker.setMinValue(0);
-      //  hoursPicker.setMaxValue(24);
+        hoursPicker.setDisplayedValues(displayedValues); */
+        hoursPicker.setMinValue(0);
+        hoursPicker.setMaxValue(48);
         minutesPicker.setMinValue(0);
         minutesPicker.setMaxValue(59);
         secondsPicker.setMinValue(0);
         secondsPicker.setMaxValue(59);
 
-        // 设置格式化器，确保个位数前加上0
+        // 设置格式化器
         NumberPicker.Formatter formatter = value -> String.format("%02d", value);
         hoursPicker.setFormatter(formatter);
         minutesPicker.setFormatter(formatter);
@@ -144,15 +165,6 @@ public class MainActivity extends AppCompatActivity {
 
 
 
-        androidx.appcompat.app.ActionBar actionBar = getSupportActionBar();
-
-
-        if (actionBar != null) {
-            // 设置logo
-            actionBar.setLogo(R.drawable.rp_test); // 替换成你的logo资源
-            actionBar.setDisplayUseLogoEnabled(true);
-            actionBar.setDisplayShowHomeEnabled(true);
-        }
 
         // 检查蓝牙权限
         if (ContextCompat.checkSelfPermission(this, android.Manifest.permission.BLUETOOTH_ADMIN)
@@ -209,9 +221,6 @@ public class MainActivity extends AppCompatActivity {
                 startAppWithShellCommand("com.cghs.stresstest" , "com.cghs.stresstest.test.CameraTest");
 
             }
-
-
-
         });
 
         Button RebootTestButton = findViewById(R.id.reboot_test_button);
@@ -375,10 +384,65 @@ public class MainActivity extends AppCompatActivity {
 
         }); */
 
+        cpuIdInput = findViewById(R.id.cpu_id_input);
+        pcbIdInput = findViewById(R.id.pcb_id_input);
+        snIdInput = findViewById(R.id.sn_id_input);
+        saveIdButton = findViewById(R.id.save_id_button);
+        testResultButton = findViewById(R.id.test_result_button);
+        uploadTestResultButton = findViewById(R.id.upload_test_result_button);
+
+        testInfo = new TestInfo(this);
+
+        // 获取 CPU ID 并设置到输入框中
+        String cpuId = testInfo .getCpuId();
+        cpuIdInput.setText(cpuId);
+        String board = testInfo.getBoard();
+
+        // 获取 SN ID 并设置到输入框中
+        String snId = getSystemProperty("ro.serialno");
+        snIdInput.setText(snId);
+
+        saveIdButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                int hours = hoursPicker.getValue();
+                int minutes = minutesPicker.getValue();
+                int seconds = secondsPicker.getValue();
+                int totalDurationInSeconds = (hours * 3600) + (minutes * 60) + seconds;
+                int totalHours = totalDurationInSeconds / 3600;
+                int totalMinutes = (totalDurationInSeconds % 3600) / 60;
+                int totalSeconds = totalDurationInSeconds % 60;
+                String totalDurationFormatted = String.format("%02d:%02d:%02d", totalHours, totalMinutes, totalSeconds);
+               // System.out.println("总时长: " + totalDurationFormatted);
+                String pcbId = pcbIdInput.getText().toString();
+                testInfo .saveIdsAsHtml(board, cpuId, pcbId, snId, totalDurationFormatted);
+                //Intent intent = new Intent(MainActivity.this, UartTestActivity.class);
+                //  intent.putExtra("file_path", new File(getFilesDir(), "saved_ids.html").getAbsolutePath());
+                // startActivity(intent);
+            }
+        });
+
+        testResultButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                testInfo.viewSavedFile();
+            }
+        });
+
+        uploadTestResultButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                String pcbId = pcbIdInput.getText().toString();
+                testInfo.uploadFileToDownload();
+            }
+        });
+        Button stopButton = findViewById(R.id.stop_button);
         Button autoTestButton = findViewById(R.id.auto_test_button);
         autoTestButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                stopButton.performClick();
+                saveIdButton.performClick();
                 autoTestButton.setEnabled(false);
                 int hours = hoursPicker.getValue();
                 int minutes = minutesPicker.getValue();
@@ -389,6 +453,8 @@ public class MainActivity extends AppCompatActivity {
                 Intent intent = new Intent(MainActivity.this, UartTestActivity.class);
                 intent.putExtra("TIMER", true); // 传递是否启动定时器
                 intent.putExtra("TIME_IN_SECONDS", timeInSeconds); // 传递定时时间
+                //intent.putExtra("file_path", new File(getFilesDir(), "saved_ids.html").getAbsolutePath());
+
 
                 // 使用SharedPreferences存储状态
                 SharedPreferences preferences = getSharedPreferences("TestStatus", MODE_PRIVATE);
@@ -402,6 +468,7 @@ public class MainActivity extends AppCompatActivity {
 
                 // 从第一个未完成的测试项开始
                 if (!isUartTestGreen) {
+                   // Intent intent = new Intent(MainActivity.this, UartTestActivity.class);
                     startTestActivity(UartTestActivity.class, timeInSeconds, REQUEST_CODE_0);
                 } else if (!isWifiBtTestGreen) {
                     startTestActivity(WifiBtSwitchTestActivity.class, timeInSeconds, REQUEST_CODE_3);
@@ -444,7 +511,10 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        Button stopButton = findViewById(R.id.stop_button);
+
+
+
+
         stopButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -480,9 +550,6 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
-
-
-
     @Override
     protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
@@ -492,26 +559,46 @@ public class MainActivity extends AppCompatActivity {
         if (resultCode == RESULT_OK && data != null) {
             boolean startTimer = data.getBooleanExtra("TIMER", false);
             boolean isNode = data.getBooleanExtra("NODE_NOT_EXIST", false);
+            boolean isPass = data.getBooleanExtra("TEST_PASS", false);
             int timeInSeconds = data.getIntExtra("TIME_IN_SECONDS", 0);
 
             switch (requestCode) {
                 case REQUEST_CODE_0:
                     if (startTimer) {
+                        if(! isPass)
+                        {
+                            uartButton.setBackgroundColor(Color.RED);
+                        }
+                        else {
+                            uartButton.setBackgroundColor(Color.GREEN);
+                        }
                         Log.d("MainActivity", "uart test start !!!!");
                         updateButtonStateAndStartNextTest(preferences, "UartTestGreen", WifiTestActivity.class, timeInSeconds, REQUEST_CODE_1);
                     }
                     break;
                 case REQUEST_CODE_1:
                     if (startTimer) {
-                      //  WifiBtButton.setBackgroundColor(Color.GREEN);
-                        wifiStatusButton.setBackgroundColor(Color.GREEN);
+                        if(! isPass)
+                        {
+                            wifiStatusButton.setBackgroundColor(Color.RED);
+                        }
+                        else {
+                            wifiStatusButton.setBackgroundColor(Color.GREEN);
+                        }
+
                         Log.d("MainActivity", "Wifi status test start !!!!");
                         updateButtonStateAndStartNextTest(preferences, "WifiTestGreen", StorageTestActivity.class, timeInSeconds, REQUEST_CODE_2);
                     }
                     break;
                 case REQUEST_CODE_2:
                     if (startTimer) {
-                        StorageButton.setBackgroundColor(Color.GREEN);
+                        if(! isPass)
+                        {
+                            StorageButton.setBackgroundColor(Color.RED);
+                        }
+                        else {
+                            StorageButton.setBackgroundColor(Color.GREEN);
+                        }
                         Log.d("MainActivity", "Storage test start !!!!");
                         updateButtonStateAndStartNextTest(preferences, "StorageTestGreen", WifiBtSwitchTestActivity.class, timeInSeconds, REQUEST_CODE_3);
                     }
@@ -519,21 +606,33 @@ public class MainActivity extends AppCompatActivity {
                 case REQUEST_CODE_3:
                     if (startTimer) {
                      //   wifiStatusButton.setBackgroundColor(Color.GREEN);
-                        WifiBtButton.setBackgroundColor(Color.GREEN);
+                        if(! isPass)
+                        {
+                            WifiBtButton.setBackgroundColor(Color.RED);
+                        }
+                        else {
+                            WifiBtButton.setBackgroundColor(Color.GREEN);
+                        }
                         Log.d("MainActivity", "WifiBT test start !!!!");
                         updateButtonStateAndStartNextTest(preferences, "WifiBtTestGreen", NetworkTestActivity.class, timeInSeconds, REQUEST_CODE_4);
                     }
                     break;
                 case REQUEST_CODE_4:
                     if (startTimer) {
-                        ethButton.setBackgroundColor(Color.GREEN);
+                        if(! isPass)
+                        {
+                            ethButton.setBackgroundColor(Color.RED);
+                        }
+                        else {
+                            ethButton.setBackgroundColor(Color.GREEN);
+                        }
                         Log.d("MainActivity", "Network test start !!!!");
                         updateButtonStateAndStartNextTest(preferences, "EthTestGreen", SpiTestActivity.class, timeInSeconds, REQUEST_CODE_5);
                     }
                     break;
                 case REQUEST_CODE_5:
                     if (startTimer) {
-                        if(isNode)
+                        if(! isNode || ! isPass)
                         {
                             spiButton.setBackgroundColor(Color.RED);
                         }
@@ -547,7 +646,7 @@ public class MainActivity extends AppCompatActivity {
                 case REQUEST_CODE_6:
                     if(startTimer)
                     {
-                        if(isNode)
+                        if(! isNode || ! isPass)
                         {canButton.setBackgroundColor(Color.RED);}
                         else {
                             canButton.setBackgroundColor(Color.GREEN);

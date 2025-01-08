@@ -58,6 +58,7 @@ import java.nio.channels.FileChannel;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.IntStream;
 import java.nio.ByteBuffer;
+import com.example.rpdzkj_test.TestInfo;
 
 
 
@@ -102,6 +103,7 @@ public class SpiTestActivity extends AppCompatActivity {
     private TimeDisplay timeDisplay;
     private  long startTime = 0;
     private TextView getTimeTextView;
+    private TestInfo testInfo;
 
 
 
@@ -114,7 +116,9 @@ public class SpiTestActivity extends AppCompatActivity {
         Intent intent = getIntent();
         timerEnabled = intent.getBooleanExtra("TIMER", false);
         timeInSeconds = intent.getIntExtra("TIME_IN_SECONDS", 0);
-
+        testInfo = new TestInfo(this);
+        File saveFile = new File(getFilesDir(), "saved_ids.html");
+        testInfo.setSavedFile(saveFile);
 
         File f00= new File("/sys/class/spidev/spidev0.0");
         if (f00.exists()){
@@ -218,10 +222,20 @@ public class SpiTestActivity extends AppCompatActivity {
                     Intent resultIntent = new Intent();
                     resultIntent.putExtra("TIMER", true);
                     resultIntent.putExtra("TIME_IN_SECONDS", timeInSeconds);
-
+                    if( shouldPause.get())
+                    {resultIntent.putExtra("TEST_PASS", false);}
+                    else
+                    {resultIntent.putExtra("TEST_PASS", true);}
                     setResult(RESULT_OK, resultIntent);
-                    if(! shouldPause.get())
-                    { finish();}
+                    String spiCounts = sumTextView.getText().toString();
+                    String spi0Rc = mTextViewReceiveContent.getText().toString();
+                    String spi1Rc = mText1ViewReceiveContent.getText().toString();
+                    String spi2Rc = mText2ViewReceiveContent.getText().toString();
+                    String spi0Times = mTextViewTestCount.getText().toString();
+                    String spi1Times = mText1ViewTestCount.getText().toString();
+                    String spi2Times = mText2ViewTestCount.getText().toString();
+                    testInfo.appendAdditionalSpiTestContent(spiCounts, spi0Rc, spi0Times, spi1Rc, spi1Times, spi2Rc, spi2Times);
+                    finish();
                 }
             }, timeInMillis);
         }
