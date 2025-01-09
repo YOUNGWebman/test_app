@@ -602,7 +602,8 @@ public class UartTestActivity extends AppCompatActivity {
                     } */
                     // 获取 UART 信息并追加到 HTML 文件中
 
-                    File saveFile = new File(getFilesDir(), "saved_ids.html");
+                   // File saveFile = new File(getFilesDir(), "saved_ids.html");
+                    File saveFile = testInfo.findFileBySuffix("rpdzkj.html");
                     testInfo.setSavedFile(saveFile);
                     String uartInfo = getUsableUARTAsString();
                     System.out.println(uartInfo);

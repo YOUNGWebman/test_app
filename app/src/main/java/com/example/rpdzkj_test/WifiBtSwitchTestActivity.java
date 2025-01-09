@@ -80,7 +80,8 @@ public class WifiBtSwitchTestActivity extends AppCompatActivity {
         timeDisplay.start();
         testInfo = new TestInfo(this);
         Button wifiButton = findViewById(R.id.wifi_button);
-        File saveFile = new File(getFilesDir(), "saved_ids.html");
+       // File saveFile = new File(getFilesDir(), "saved_ids.html");
+        File saveFile = testInfo.findFileBySuffix("rpdzkj.html");
         testInfo.setSavedFile(saveFile);
         wifiButton.setOnClickListener(new View.OnClickListener() {
             @Override

@@ -83,7 +83,8 @@ public class WifiTestActivity extends AppCompatActivity {
 
         // 开始测试
         networkTest.start();
-        File saveFile = new File(getFilesDir(), "saved_ids.html");
+       // File saveFile = new File(getFilesDir(), "saved_ids.html");
+        File saveFile = testInfo.findFileBySuffix("rpdzkj.html");
         testInfo.setSavedFile(saveFile);
         if (timerEnabled) {
             int timeInMillis = timeInSeconds * 1000;

@@ -93,7 +93,8 @@ public class NetworkTestActivity extends AppCompatActivity {
         connectivityManager.registerNetworkCallback(networkRequest, networkTest2.networkCallback);
 
         testInfo = new TestInfo(this);
-        File saveFile = new File(getFilesDir(), "saved_ids.html");
+       // File saveFile = new File(getFilesDir(), "saved_ids.html");
+        File saveFile = testInfo.findFileBySuffix("rpdzkj.html");
         testInfo.setSavedFile(saveFile);
 
         networkTest.start();

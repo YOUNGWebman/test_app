@@ -117,7 +117,8 @@ public class CanTestActivity extends AppCompatActivity {
         timerEnabled = intent.getBooleanExtra("TIMER", false);
         timeInSeconds = intent.getIntExtra("TIME_IN_SECONDS", 0);
         testInfo = new TestInfo(this);
-        File saveFile = new File(getFilesDir(), "saved_ids.html");
+        //File saveFile = new File(getFilesDir(), "saved_ids.html");
+        File saveFile = testInfo.findFileBySuffix("rpdzkj.html");
         testInfo.setSavedFile(saveFile);
 
 /* startCanButton.setOnClickListener(new View.OnClickListener() {

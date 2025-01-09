@@ -19,6 +19,7 @@ import java.io.OutputStream;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import android.util.Log;
+import java.io.File;
 
 public class TestInfo {
     private Context context;
@@ -52,7 +53,44 @@ public class TestInfo {
         // 保存新文件
         saveToFile(content, directory, "saved_ids.html");
     } */
-   public void saveIdsAsHtml(String board, String cpuId, String pcbId, String snId, String testTime) {
+
+    public void saveIdsAsHtml(String board, String cpuId, String pcbId, String snId, String testTime) {
+        // 生成HTML内容
+        String content = generateHtmlContent(board, cpuId, pcbId, snId, testTime);
+
+        // 获取目标文件路径
+        File directory = context.getFilesDir();
+
+        // 删除当前路径下所有的.html文件
+        deleteHtmlFiles(directory);
+
+        // 生成新文件名
+        String fileName = generateFileName(pcbId, snId);
+        File file = new File(directory, fileName);
+
+        // 保存新文件
+        saveToFile(content, directory, fileName);
+    }
+
+    private void deleteHtmlFiles(File directory) {
+        File[] files = directory.listFiles((dir, name) -> name.endsWith(".html"));
+        if (files != null) {
+            for (File file : files) {
+                if (file.delete()) {
+                    Log.d("FileOperation", "已成功删除文件: " + file.getAbsolutePath());
+                } else {
+                    Log.e("FileOperation", "删除文件失败: " + file.getAbsolutePath());
+                }
+            }
+        }
+    }
+
+    public String generateFileName(String pcbId, String snId) {
+        String pcbIdPart = (pcbId != null && !pcbId.isEmpty()) ? pcbId.substring(0, 6) : "pcb_id_null";
+        return pcbIdPart + "_" + snId.substring(0, 6) + "_rpdzkj.html";
+    }
+
+  /* public void saveIdsAsHtml(String board, String cpuId, String pcbId, String snId, String testTime) {
        // 生成HTML内容
        String content = generateHtmlContent(board, cpuId, pcbId, snId, testTime);
 
@@ -73,7 +111,7 @@ public class TestInfo {
 
        // 保存新文件
        saveToFile(content, directory, fileName);
-   }
+   } */
 
 
 
@@ -513,55 +551,16 @@ public class TestInfo {
         }
         return boardInfo.toString();
     }
-}
 
-/* public void appendAdditionalContent(String uartInfo, int[] testCounts) {
-        if (savedFile != null && savedFile.exists()) {
-            try {
-                System.out.println("文件存在: " + savedFile.getAbsolutePath());
+    public File findFileBySuffix(String suffix) {
+        File directory = context.getFilesDir();
+        File[] files = directory.listFiles((dir, name) -> name.endsWith(suffix));
 
-                // 读取已有文件内容
-                StringBuilder content = new StringBuilder();
-                try (BufferedReader reader = new BufferedReader(new FileReader(savedFile))) {
-                    String line;
-                    while ((line = reader.readLine()) != null) {
-                        content.append(line).append("\n");
-                    }
-                }
-                System.out.println("已有文件内容:\n" + content);
-
-                // 提取 ttyS 内容
-                String[] uartLines = uartInfo.split("\\s+");
-                StringBuilder extractedContent = new StringBuilder();
-                extractedContent.append("<table border='1'><tr><th>UART</th><th>测试次数</th></tr>");
-                for (int i = 0; i < uartLines.length; i++) {
-                    String line = uartLines[i];
-                    if (line.startsWith("/dev/ttyS")) {
-                        extractedContent.append("<tr><td>").append(line.replace("/dev/", "")).append("</td>")
-                                .append("<td>").append(testCounts[i]).append("</td></tr>");
-                    }
-                }
-                extractedContent.append("</table>");
-                System.out.println("提取后的内容:\n" + extractedContent);
-
-                // 在 </body> 标签前插入新内容
-                int bodyEndIndex = content.lastIndexOf("</body>");
-                if (bodyEndIndex != -1) {
-                    content.insert(bodyEndIndex, extractedContent.toString());
-                    System.out.println("更新后的文件内容:\n" + content);
-                }
-
-                // 将更新后的内容写回文件
-                try (FileWriter writer = new FileWriter(savedFile)) {
-                    writer.write(content.toString());
-                }
-
-                Toast.makeText(context, "内容已追加到 HTML 文件", Toast.LENGTH_SHORT).show();
-            } catch (IOException e) {
-                e.printStackTrace();
-                Toast.makeText(context, "追加内容失败", Toast.LENGTH_SHORT).show();
-            }
+        if (files != null && files.length > 0) {
+            return files[0]; // 返回第一个匹配的文件
         } else {
-            Toast.makeText(context, "没有可追加的文件", Toast.LENGTH_SHORT).show();
+            return null; // 没有找到匹配的文件
         }
-    } */
+    }
+
+}
