@@ -151,7 +151,7 @@ public class CanTestActivity extends AppCompatActivity {
                     if(canTotal == 0)
                     {
                         Intent resultIntent = new Intent();
-                        resultIntent.putExtra("NODE_NOT_EXIST", true);
+                        resultIntent.putExtra("NODE_EXIST", false);
                         resultIntent.putExtra("TIMER", true);
                         resultIntent.putExtra("TIME_IN_SECONDS", timeInSeconds);
                         setResult(RESULT_OK, resultIntent);

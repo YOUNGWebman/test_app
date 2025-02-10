@@ -171,7 +171,7 @@ public class SpiTestActivity extends AppCompatActivity {
                     {
                         Intent resultIntent = new Intent();
                         resultIntent.putExtra("TIMER", true);
-                        resultIntent.putExtra("NODE_NOT_EXIST", true);
+                        resultIntent.putExtra("NODE_EXIST", false);
                         resultIntent.putExtra("TIME_IN_SECONDS", timeInSeconds);
 
                         setResult(RESULT_OK, resultIntent);

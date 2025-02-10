@@ -676,7 +676,7 @@ public class UartTestActivity extends AppCompatActivity {
             timeDisplay.pause();
         }
         // 停止执行器并尝试中断所有任务
-        if (executor != null || !executor.isShutdown()) {
+        if (executor != null && !executor.isShutdown()) {
             Log.e("UART Test", "开始线程回收");
             executor.shutdownNow();
             try {

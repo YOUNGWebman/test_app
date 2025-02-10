@@ -558,7 +558,7 @@ public class MainActivity extends AppCompatActivity {
 
         if (resultCode == RESULT_OK && data != null) {
             boolean startTimer = data.getBooleanExtra("TIMER", false);
-            boolean isNode = data.getBooleanExtra("NODE_NOT_EXIST", false);
+            boolean isNodeExist = data.getBooleanExtra("NODE_EXIST", true);
             boolean isPass = data.getBooleanExtra("TEST_PASS", false);
             int timeInSeconds = data.getIntExtra("TIME_IN_SECONDS", 0);
 
@@ -632,12 +632,12 @@ public class MainActivity extends AppCompatActivity {
                     break;
                 case REQUEST_CODE_5:
                     if (startTimer) {
-                        if(! isNode || ! isPass)
+                        if(  isNodeExist &&  isPass)
                         {
-                            spiButton.setBackgroundColor(Color.RED);
+                            spiButton.setBackgroundColor(Color.GREEN);
                         }
                         else {
-                            spiButton.setBackgroundColor(Color.GREEN);
+                            spiButton.setBackgroundColor(Color.RED);
                         }
                         Log.d("MainActivity", "SPI test start !!!!");
                         updateButtonStateAndStartNextTest(preferences, "SpiTestGreen", CanTestActivity.class, timeInSeconds, REQUEST_CODE_6);
@@ -646,10 +646,12 @@ public class MainActivity extends AppCompatActivity {
                 case REQUEST_CODE_6:
                     if(startTimer)
                     {
-                        if(! isNode || ! isPass)
-                        {canButton.setBackgroundColor(Color.RED);}
+
+                       if( isNodeExist &&  isPass)
+                           // if( ! isPass)
+                        {canButton.setBackgroundColor(Color.GREEN);}
                         else {
-                            canButton.setBackgroundColor(Color.GREEN);
+                            canButton.setBackgroundColor(Color.RED);
                         }
                     }
                     SharedPreferences.Editor editor6 = preferences.edit();
